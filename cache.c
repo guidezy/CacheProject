@@ -29,18 +29,18 @@ void fetchDataFromFile(struct Cache* pcache, struct Cache_Block_Header* block, F
 	fseek(file, DADDR(pcache, ibfile), SEEK_SET);
 
 	//Copy BLOCKSZ bytes to block
-	fread(block->data, pcache->recordsz, 1, file);
+	fread(block->data, pcache->recordsz, pcache->nrecords, file);
 
 	return;
 }
 
-void sendDataToFile(struct Cache* pcache, struct Cache_Block_Header* block, FILE* file, int ibfile)
+void sendDataToFile(struct Cache* pcache, struct Cache_Block_Header* block, FILE* file)
 {
 	//Position cursor in correct position inside FILE
-	fseek(file, DADDR(pcache, ibfile), SEEK_SET);	
+	fseek(file, DADDR(pcache, block->ibfile), SEEK_SET);	
 
 	//Copy block data to file
-	fwrite(block->data, pcache->recordsz, 1, file);
+	fwrite(block->data, pcache->recordsz, pcache->nrecords, file);
 }
 
 //----------------------------------
@@ -155,17 +155,15 @@ Cache_Error Cache_Write(struct Cache *pcache, int irfile, const void *precord)
 
 	//Synchronize with file before substitution
 	if(block->flags & MODIF)
-	{
-		sendDataToFile(pcache, block, pcache->fp, ibfile);
-	}
+		sendDataToFile(pcache, block, pcache->fp);
 
+	//Copy record to block
+	memcpy(block->data[irblock], precord, pcache->recordsz);
 
-	/*
-	— Si l’opération précédente n’est pas possible car le cache est plein (i.e., tous ses blocs
-	sont valides), on libère un des blocs du cache pour y copier le bloc disque et donc ainsi
-	changer son affectation (le nouveau bloc est alors marqué valide V = 1 et non modifié
-	M = 0) ; sélectionner le bloc à libérer est le rôle de l’algorithme de remplacement de
-	bloc ; bien entendu, si le bloc à libérer a été modifié pendant sa durée de résidence
-	(ou, de manière équivalente, de validité) dans le cache, il faut le réécrire sur disque
-	avant de changer son affectation. */
+	//Change block info
+	block->flags = block->flags | MODIF;
+	block->ibfile = ibfile;
+
+	//Return
+	return CACHE_OK;
 }
