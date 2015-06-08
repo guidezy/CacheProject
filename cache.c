@@ -114,6 +114,12 @@ struct Cache_Instrument *Cache_Get_Instrument(struct Cache *pcache)
 	return copy;
 }
 
+Cache_Error Cache_Sync(struct Cache *pcache)
+{
+	for(int i = 0; i < pcache->nblocks; i++)
+		sendDataToFile(pcache, pcache->headers[i], pcache->fp);
+}
+
 Cache_Error Cache_Write(struct Cache *pcache, int irfile, const void *precord)
 {	
 	//Calculate to which block IRFILE belongs, then verify if it's in the cache
