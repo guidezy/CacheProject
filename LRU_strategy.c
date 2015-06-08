@@ -33,7 +33,6 @@ struct Cache_Block_Header *Strategy_Replace_Block(struct Cache *pcache)
 }
 
 
-/
 void Strategy_Read(struct Cache *pcache, struct Cache_Block_Header *pbh) 
 {
 }  
