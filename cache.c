@@ -3,6 +3,7 @@
 #include "strategy.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 
 //------------------------------
 //--------- INTERNAL -----------
@@ -20,6 +21,17 @@ int searchIndexInCache(int ibfile, struct Cache* pcache)
 	}
 
 	return -1;
+}
+
+void fetchDataFromFile(struct Cache* pcache, struct Cache_Block_Header* block, FILE* file, int ibfile)
+{
+	//Position cursor in correct position inside FILE
+	fseek(file, DADDR(pcache, ibfile), SEEK_SET);
+
+	//Copy BLOCKSZ bytes to block
+	fread(block->data, pcache->recordsz, 1, file);
+
+	return;
 }
 
 //----------------------------------
@@ -90,23 +102,38 @@ struct Cache_Instrument *Cache_Get_Instrument(struct Cache *pcache)
 Cache_Error Cache_Write(struct Cache *pcache, int irfile, const void *precord)
 {	
 	//Calculate to which block IRFILE belongs, then verify if it's in the cache
-	int ibfile = irfile / pcache->nrecords;
+	int ibfile = irfile / pcache->nrecords; //Number of the block which contains this entry
+	int irblock = irfile % pcache->nrecords; //Index inside a block
 	int blockIndex = searchIndexInCache(ibfile, pcache);
 
 	if(blockIndex >= 0)
 	{
 		//The block is inside the cache! Update value and mark it as modified
-		int irblock = irfile % pcache->nrecords; //Index inside a block
-		Cache_Block_Header* block = pcache->headers[blockIndex];
+		struct Cache_Block_Header block = pcache->headers[blockIndex];
 
-		memcpy( block->data[irblock], precord, pcache->recordsz );
-		block->flags = block->flags | MODIF;
+		memcpy( block.data[irblock], precord, pcache->recordsz );
+		block.flags = block.flags | MODIF;
 
 		return CACHE_OK;
 	}
 
 	//BLOCK IS NOT IN CACHE
 	//Try to put it in some free position
+	struct Cache_Block_Header* block = Get_Free_Block(pcache);
+
+	if(block != NULL)
+	{
+		//We found some free space to put our data
+
+		//Fetch data from file
+		fetchDataFromFile(pcache, block, pcache->fp, ibfile);
+
+		//Copy record to block
+
+		//Mark it as modified
+
+		//Return
+	}
 
 	/*
 	— Si le cache ne contient pas l’enregistrement demandé, on cherche un bloc libre (i.e.,
