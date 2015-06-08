@@ -1,5 +1,5 @@
 /*!
- * \file LRU_strategy.c
+ * \file LRU.c
  * Implementation de la strategie LRU 
  */
 
