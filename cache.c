@@ -15,12 +15,12 @@
 struct Cache* Cache_Create(const char *fic, unsigned nblocks, unsigned nrecords, 
 							size_t recordsz, unsigned nderef)
 {
-	//Open file FIC if it does not already exist
+	//Ouvre le fichier FIC - et le crée si ça existe pas encore
 	FILE *file;
 	if( (file = fopen(fic, "r+")) == NULL)
 		file = fopen(fic, "w+");
 
-	//Allocate a new struct Cache*
+	//Alloue un nouveau struct Cache*
 	struct Cache* cache = malloc( sizeof(struct Cache) );
 	
 	cache->file = fic;
@@ -38,4 +38,17 @@ struct Cache* Cache_Create(const char *fic, unsigned nblocks, unsigned nrecords,
 	cache->pstrategy = Strategy_Create(cache);
 
 	return cache;
+}
+
+Cache_Error Cache_Close(struct Cache *pcache)
+{
+	//Synchroniser les choses - faut tester si y a des erreurs retournés par Cache_Sync!
+	Cache_Sync();
+
+	//Fermer les fichiers
+	fclose(pcache->file);
+
+	//Free tous les structs
+	free( pcache->headers );
+	free( pcache );
 }
