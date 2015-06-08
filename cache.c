@@ -7,7 +7,20 @@
 //------------------------------
 //--------- INTERNAL -----------
 //------------------------------
+int searchIndexInCache(int ibfile, struct Cache* pcache)
+{
+	for(int i = 0; i < pcache->nblocks; i++)
+	{
+		struct Cache_Block_Header block = pcache->headers[i];
 
+		//Si le bloc est valide et l'indice est ce qu'on cherche,
+		//retourner la position du bloc dans le cache
+		if((block.flags & VALID) && block.ibfile == ibfile)
+			return i;
+	}
+
+	return -1;
+}
 
 //----------------------------------
 //--------- FROM CACHE.C -----------
@@ -72,4 +85,44 @@ struct Cache_Instrument *Cache_Get_Instrument(struct Cache *pcache)
 	pcache->instrument = (struct Cache_Instrument){0,0,0,0,0};
 
 	return copy;
+}
+
+Cache_Error Cache_Write(struct Cache *pcache, int irfile, const void *precord)
+{
+	/*
+	L’utilisateur fournit le numéro de l’enregistrement (irfile) qu’il veut lire ou écrire
+	ainsi que l’adresse d’un buffer dans son propre espace d’adressage ; */
+
+
+
+
+
+	/*
+	— On regarde si cet enregistrement est dans un bloc valide du cache (il ne peut être que
+	dans au plus un seul bloc) ; si oui on transfère une copie de l’enregistrement depuis */
+	int block = searchIndexInCache(irfile, pcache);
+
+
+	/*
+	le cache vers le buffer de l’utilisateur pour une lecture, ou en sens inverse pour une
+	écriture (dans le second cas on positionne l’indicateur M du bloc à 1) ; la requête de
+	l’utilisateur n’induit alors aucune entrée-sortie ; */
+	
+
+
+
+	/*
+	— Si le cache ne contient pas l’enregistrement demandé, on cherche un bloc libre (i.e.,
+	invalide V = 0) dans le cache et y copie tout le bloc du fichier contenant l’enregistrement
+	d’index (irfile) ; on peut alors effectuer le transfert de ou vers le buffer de
+	l’utilisateur ; on laisse bien entendu le bloc dans le cas pour le cas où il serait accédé
+	ultérieurement ;
+
+	— Si l’opération précédente n’est pas possible car le cache est plein (i.e., tous ses blocs
+	sont valides), on libère un des blocs du cache pour y copier le bloc disque et donc ainsi
+	changer son affectation (le nouveau bloc est alors marqué valide V = 1 et non modifié
+	M = 0) ; sélectionner le bloc à libérer est le rôle de l’algorithme de remplacement de
+	bloc ; bien entendu, si le bloc à libérer a été modifié pendant sa durée de résidence
+	(ou, de manière équivalente, de validité) dans le cache, il faut le réécrire sur disque
+	avant de changer son affectation. */
 }
