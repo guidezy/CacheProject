@@ -34,6 +34,15 @@ void fetchDataFromFile(struct Cache* pcache, struct Cache_Block_Header* block, F
 	return;
 }
 
+void sendDataToFile(struct Cache* pcache, struct Cache_Block_Header* block, FILE* file, int ibfile)
+{
+	//Position cursor in correct position inside FILE
+	fseek(file, DADDR(pcache, ibfile), SEEK_SET);	
+
+	//Copy block data to file
+	fwrite(block->data, pcache->recordsz, 1, file);
+}
+
 //----------------------------------
 //--------- FROM CACHE.C -----------
 //----------------------------------
@@ -143,6 +152,13 @@ Cache_Error Cache_Write(struct Cache *pcache, int irfile, const void *precord)
 
 	//NO FREE POSITION
 	block = Strategy_Replace_Block(pcache);
+
+	//Synchronize with file before substitution
+	if(block->flags & MODIF)
+	{
+		sendDataToFile(pcache, block, pcache->fp, ibfile);
+	}
+
 
 	/*
 	— Si l’opération précédente n’est pas possible car le cache est plein (i.e., tous ses blocs
