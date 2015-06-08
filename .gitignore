@@ -1,0 +1,8 @@
+Plots/
+*.pdf
+*.o
+*.out
+tst_Cache_RAND
+tst_Cache_FIFO
+tst_Cache_LRU
+tst_Cache_NUR
