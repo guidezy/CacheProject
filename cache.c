@@ -31,24 +31,27 @@ struct Cache* Cache_Create(const char *fic, unsigned nblocks, unsigned nrecords,
 	cache->nrecords = nrecords;
 	cache->recordsz = recordsz;
 	cache->blocksz = nrecords * recordsz;
-	cache->instrument = (Cache_Instrument*)0; //Met à zero tous les champs de instrument
+	cache->instrument = (struct Cache_Instrument){0,0,0,0,0}; //Met à zero tous les champs de instrument
 
 	cache->headers = (struct Cache_Block_Header*)malloc( cache->blocksz * nblocks );
-	cache->pfree = cache->headers[0];
+	cache->pfree = &cache->headers[0];
 	cache->pstrategy = Strategy_Create(cache);
 
+	
 	return cache;
 }
 
 Cache_Error Cache_Close(struct Cache *pcache)
 {
 	//Synchroniser les choses - faut tester si y a des erreurs retournés par Cache_Sync!
-	Cache_Sync();
+	Cache_Sync(pcache);
 
 	//Fermer les fichiers
-	fclose(pcache->file);
+	fclose(pcache->fp);
 
 	//Free tous les structs
 	free( pcache->headers );
 	free( pcache );
+
+	return CACHE_OK;
 }
