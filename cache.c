@@ -88,28 +88,25 @@ struct Cache_Instrument *Cache_Get_Instrument(struct Cache *pcache)
 }
 
 Cache_Error Cache_Write(struct Cache *pcache, int irfile, const void *precord)
-{
-	/*
-	L’utilisateur fournit le numéro de l’enregistrement (irfile) qu’il veut lire ou écrire
-	ainsi que l’adresse d’un buffer dans son propre espace d’adressage ; */
+{	
+	//Calculate to which block IRFILE belongs, then verify if it's in the cache
+	int ibfile = irfile / pcache->nrecords;
+	int blockIndex = searchIndexInCache(ibfile, pcache);
 
+	if(blockIndex >= 0)
+	{
+		//The block is inside the cache! Update value and mark it as modified
+		int irblock = irfile % pcache->nrecords; //Index inside a block
+		Cache_Block_Header* block = pcache->headers[blockIndex];
 
+		memcpy( block->data[irblock], precord, pcache->recordsz );
+		block->flags = block->flags | MODIF;
 
+		return CACHE_OK;
+	}
 
-
-	/*
-	— On regarde si cet enregistrement est dans un bloc valide du cache (il ne peut être que
-	dans au plus un seul bloc) ; si oui on transfère une copie de l’enregistrement depuis */
-	int block = searchIndexInCache(irfile, pcache);
-
-
-	/*
-	le cache vers le buffer de l’utilisateur pour une lecture, ou en sens inverse pour une
-	écriture (dans le second cas on positionne l’indicateur M du bloc à 1) ; la requête de
-	l’utilisateur n’induit alors aucune entrée-sortie ; */
-	
-
-
+	//BLOCK IS NOT IN CACHE
+	//Try to put it in some free position
 
 	/*
 	— Si le cache ne contient pas l’enregistrement demandé, on cherche un bloc libre (i.e.,
