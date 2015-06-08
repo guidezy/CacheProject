@@ -61,3 +61,15 @@ Cache_Error Cache_Invalidate(struct Cache *pcache)
 	for(int i = 0; i < pcache->nblocks; i++)
 		pcache->headers[i].flags = pcache->headers[i].flags & !VALID;
 }
+
+struct Cache_Instrument *Cache_Get_Instrument(struct Cache *pcache)
+{
+	//Copier champ INSTRUMENT de pcache
+	struct Cache_Instrument* copy = (struct Cache_Instrument*)malloc( sizeof(struct Cache_Instrument) );
+	memcpy( copy, pcache->instrument, sizeof(struct Cache_Instrument) );
+
+	//Met tous à zero
+	pcache->instrument = (struct Cache_Instrument){0,0,0,0,0};
+
+	return copy;
+}
