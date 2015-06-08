@@ -13,6 +13,7 @@
 
 struct Cache;
 struct Cache_Block_Header;
+struct Cache_List;
 
 /*!
  * \defgroup strategy_interface Interface de la stratégie de remplacement
