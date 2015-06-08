@@ -18,8 +18,8 @@
 
 void *Strategy_Create(struct Cache *pcache) 
 {
-    Cache_List *liste = Cache_List_Create();
-    return &liste;
+    struct Cache_List *liste = Cache_List_Create();
+    return (struct Cache_List*)liste;
 }
 
 
