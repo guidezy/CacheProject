@@ -200,3 +200,60 @@ Cache_Error Cache_Write(struct Cache *pcache, int irfile, const void *precord)
 	//Return
 	return CACHE_OK;
 }
+
+Cache_Error Cache_Read(struct Cache *pcache, int irfile, void *precord)
+{
+	//Calculate to which block IRFILE belongs, then verify if it's in the cache
+	int ibfile = irfile / pcache->nrecords; //Number of the block which contains this entry
+	int irblock = irfile % pcache->nrecords; //Index inside a block
+	int blockIndex = searchIndexInCache(ibfile, pcache);
+
+	if(blockIndex >= 0)
+	{
+		//The block is inside the cache! Copy the entry to precord
+		struct Cache_Block_Header block = pcache->headers[blockIndex];
+		memcpy( precord, block.data[irblock], pcache->recordsz );
+		return CACHE_OK;
+	}
+
+	//BLOCK IS NOT IN CACHE
+	//Try to fetch block in some free position
+	struct Cache_Block_Header* block = Get_Free_Block(pcache);
+
+	if(block != NULL)
+	{
+		//We found some free space to put our data!
+		//Fetch data from file
+		fetchDataFromFile(pcache, block, pcache->fp, ibfile);
+
+		//Copy record to block
+		memcpy(precord, block->data[irblock], pcache->recordsz);
+
+		//Mark it as valid
+		block->flags = block->flags | VALID;
+
+		//Return
+		return CACHE_OK;
+	}
+
+	//NO FREE POSITION
+	block = Strategy_Replace_Block(pcache);
+
+	//Synchronize with file before substitution
+	if(block->flags & MODIF)
+		sendDataToFile(pcache, block, pcache->fp);
+
+	//Fetch data from file
+	fetchDataFromFile(pcache, block, pcache->fp, ibfile);
+
+	//Copy block entry to buffer
+	memcpy(precord, block->data[irblock], pcache->recordsz);
+
+	//Update block info
+	block->ibfile = ibfile;
+
+	//REFLEX CALL
+	Strategy_Read(pcache, block);
+
+	return CACHE_OK;
+}
