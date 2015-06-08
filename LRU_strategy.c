@@ -7,14 +7,15 @@
 
 #include "strategy.h"
 #include "low_cache.h"
+#include "cache_list.h"
 #include "random.h"
 #include "time.h"
 
 
 void *Strategy_Create(struct Cache *pcache) 
 {
-    // srand((unsigned int)time(NULL));
-    return NULL;
+	Cache_List *list = Cache_List_Create(); 
+	return list; 
 }
 
 
