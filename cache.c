@@ -3,7 +3,7 @@
 #include "strategy.h"
 
 #include <stdio.h>
-#include <stdlib.h>
+#include <string.h>
 
 //------------------------------
 //--------- INTERNAL -----------
@@ -31,6 +31,9 @@ void fetchDataFromFile(struct Cache* pcache, struct Cache_Block_Header* block, F
 	//Copy BLOCKSZ bytes to block
 	fread(block->data, pcache->recordsz, pcache->nrecords, file);
 
+	//Rewind file
+	rewind(file);
+
 	return;
 }
 
@@ -41,6 +44,9 @@ void sendDataToFile(struct Cache* pcache, struct Cache_Block_Header* block, FILE
 
 	//Copy block data to file
 	fwrite(block->data, pcache->recordsz, pcache->nrecords, file);
+
+	//Rewind file
+	rewind(file);
 }
 
 //----------------------------------
@@ -67,9 +73,15 @@ struct Cache* Cache_Create(const char *fic, unsigned nblocks, unsigned nrecords,
 	cache->blocksz = nrecords * recordsz;
 	cache->instrument = (struct Cache_Instrument){0,0,0,0,0}; //Met à zero tous les champs de instrument
 
-	cache->headers = (struct Cache_Block_Header*)malloc( cache->blocksz * nblocks );
+	cache->headers = (struct Cache_Block_Header*)malloc( sizeof(struct Cache_Block_Header) * nblocks );
 	for(int i = 0; i < cache->nblocks; i++)
+	{
 		cache->headers[i].ibcache = i;
+		cache->headers[i].data = (char*)malloc( cache->recordsz * cache->nrecords );
+
+		for(int j = 0; j < cache->recordsz * cache->nrecords; j++)
+			cache->headers[i].data[j] = 'w';
+	}
 
 	cache->pfree = &cache->headers[0];
 	cache->pstrategy = Strategy_Create(cache);
@@ -100,6 +112,8 @@ Cache_Error Cache_Invalidate(struct Cache *pcache)
 		pcache->headers[i].flags = pcache->headers[i].flags & !VALID;
 
 	Strategy_Invalidate(pcache);
+
+	return CACHE_OK;
 }
 
 struct Cache_Instrument *Cache_Get_Instrument(struct Cache *pcache)
@@ -118,21 +132,29 @@ Cache_Error Cache_Sync(struct Cache *pcache)
 {
 	for(int i = 0; i < pcache->nblocks; i++)
 		sendDataToFile(pcache, &pcache->headers[i], pcache->fp);
+
+	return CACHE_OK;
 }
 
 struct Cache_Block_Header *Get_Free_Block(struct Cache *pcache)
 {
 	struct Cache_Block_Header* free = pcache->pfree;
 
+	if(!free) return NULL;
+
+	free->flags = free->flags | VALID;
+
 	//Search next free block
-	for(int i = 0; i < pcache->nblocks; i++)
+	int i;
+	for(i = 0; i < pcache->nblocks; i++)
 		if( !(pcache->headers[i].flags & VALID) )
 		{
 			pcache->pfree = &pcache->headers[i];
 			break;
 		}
 
-	if(free) free->flags = free->flags | VALID;
+	if(i == pcache->nblocks)
+		pcache->pfree = NULL;
 
 	return free;
 }
@@ -149,7 +171,7 @@ Cache_Error Cache_Write(struct Cache *pcache, int irfile, const void *precord)
 		//The block is inside the cache! Update value and mark it as modified
 		struct Cache_Block_Header block = pcache->headers[blockIndex];
 
-		memcpy( block.data[irblock], precord, pcache->recordsz );
+		memcpy(&block.data[pcache->recordsz * irblock], precord, pcache->recordsz );
 		block.flags = block.flags | MODIF;
 
 		return CACHE_OK;
@@ -162,14 +184,14 @@ Cache_Error Cache_Write(struct Cache *pcache, int irfile, const void *precord)
 	if(block != NULL)
 	{
 		//We found some free space to put our data
-
 		//Fetch data from file
 		fetchDataFromFile(pcache, block, pcache->fp, ibfile);
 
-		//Copy record to block
-		memcpy(block->data[irblock], precord, pcache->recordsz);
+		//Copy record to block - NOT SURE THIS WORKS PROPERLY
+		memcpy(&block->data[pcache->recordsz * irblock], precord, pcache->recordsz);
 
-		//Mark it as modified
+		//Mark it as modified and update index
+		block->ibfile = ibfile;
 		block->flags = block->flags | MODIF;
 		block->flags = block->flags | VALID;
 
@@ -188,7 +210,7 @@ Cache_Error Cache_Write(struct Cache *pcache, int irfile, const void *precord)
 	fetchDataFromFile(pcache, block, pcache->fp, ibfile);
 
 	//Copy record to block
-	memcpy(block->data[irblock], precord, pcache->recordsz);
+	memcpy(&block->data[pcache->recordsz * irblock], precord, pcache->recordsz);
 
 	//Update block info
 	block->flags = block->flags | MODIF;
@@ -210,9 +232,10 @@ Cache_Error Cache_Read(struct Cache *pcache, int irfile, void *precord)
 
 	if(blockIndex >= 0)
 	{
-		//The block is inside the cache! Copy the entry to precord
+		//The block is inside the cache! Copy the entry to precord		
 		struct Cache_Block_Header block = pcache->headers[blockIndex];
-		memcpy( precord, block.data[irblock], pcache->recordsz );
+		memcpy( precord, &block.data[pcache->recordsz * irblock], pcache->recordsz );
+
 		return CACHE_OK;
 	}
 
@@ -247,7 +270,7 @@ Cache_Error Cache_Read(struct Cache *pcache, int irfile, void *precord)
 	fetchDataFromFile(pcache, block, pcache->fp, ibfile);
 
 	//Copy block entry to buffer
-	memcpy(precord, block->data[irblock], pcache->recordsz);
+	memcpy(precord, &block->data[pcache->recordsz * irblock], pcache->recordsz);
 
 	//Update block info
 	block->ibfile = ibfile;
