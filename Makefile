@@ -11,10 +11,13 @@
 
 HDR = $(wildcard *.h)
 SRC = $(wildcard *.c)
+SRC_DIR = src
+BIN_DIR = bin
+OBJ_DIR = obj
 
 # Exécutables à construire
 
-PROGS = tst_Cache_RAND tst_Cache_FIFO tst_Cache_LRU tst_Cache_NUR
+PROGS = $(BIN_DIR)/tst_Cache_RAND $(BIN_DIR)/tst_Cache_FIFO $(BIN_DIR)/tst_Cache_LRU $(BIN_DIR)/tst_Cache_NUR
 
 # Fichiers de bibliothèque à reconstruire : initialement vide. 
 # Mettre ici les *.o de la bibliothèque que vous avez réimplémentés
@@ -39,11 +42,11 @@ DOXYGEN = doxygen
 #------------------------------------------------------------------
 
 # Exécutables avec diverses stratégies
-tst_Cache_% : tst_Cache.o %_strategy.o $(USRFILES)	
+$(BIN_DIR)/tst_Cache_% : $(OBJ_DIR)/tst_Cache.o $(OBJ_DIR)/%_strategy.o $(USRFILES)	
 	$(CC) -o $@ $^ libCache.a
 
 # Exécution des simulations (make simul) avec paramètres par défaut
-%_default.out : tst_Cache_%
+$(BIN_DIR)/%_default.out : $(BIN_DIR)/tst_Cache_%
 	$< > $@
 
 #------------------------------------------------------------------
@@ -53,17 +56,17 @@ tst_Cache_% : tst_Cache.o %_strategy.o $(USRFILES)
 # Exécutables : décommentés les exécutables des stratégies que vous avez implémentées
 # N'enlevez pas depend !
 
-all : depend tst_Cache_RAND # tst_Cache_FIFO tst_Cache_LRU tst_Cache_NUR
+all : $(BIN_DIR)/depend $(BIN_DIR)/tst_Cache_RAND # $(BIN_DIR)/tst_Cache_FIFO $(BIN_DIR)/tst_Cache_LRU $(BIN_DIR)/tst_Cache_NUR
 
 # Nettoyage 
 clean : all
-	-rm -f *.o *.out foo
+	-rm -f $(OBJ_DIR)/*.o $(BIN_DIR)/*.out foo
 
 # Nettoyage complet
 full_clean :
-	-rm -f *.o *.out foo
-	-rm -f tst_Cache_RAND tst_Cache_FIFO tst_Cache_LRU tst_Cache_NUR
-	-rm depend.out
+	-rm -f $(OBJ_DIR)/*.o $(BIN_DIR)/*.out foo
+	-rm -f $(BIN_DIR)/tst_Cache_RAND $(BIN_DIR)/tst_Cache_FIFO $(BIN_DIR)/tst_Cache_LRU $(BIN_DIR)/tst_Cache_NUR
+	-rm $(BIN_DIR)/depend.out
 	-rm -rf Plots
 
 #------------------------------------------------------------------
@@ -80,10 +83,10 @@ plots : all
 # Reconstruction automatique des dépendances
 #------------------------------------------------------------------
 
-depend : 
-	$(MAKE) depend.out
+$(BIN_DIR)/depend : 
+	$(MAKE) $(BIN_DIR)/depend.out
 
-depend.out : $(SRC) $(HDR)
-	$(MKDEPEND) $(SRC) > depend.out
+$(BIN_DIR)/depend.out : $(SRC_DIR)/$(SRC) $(SRC_DIR)/$(HDR)
+	$(MKDEPEND) $(SRC_DIR)/$(SRC) > $(BIN_DIR)/depend.out
 
-include depend.out
+include bin/depend.out
