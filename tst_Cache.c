@@ -154,25 +154,32 @@ static int Do_Test[NTESTS] = {false, false, false, false, false};
  */
 int main(int argc, char *argv[])
 {
-    int i;
+
+    struct Cache* c = Cache_Create(File, N_Blocks_in_Cache, N_Records_per_Block,
+                                  Record_Size, N_Deref);
+
+
+    //------------ ORIGINAL TESTS ------------
+
+    //int i;
 
     /* Décodage des arguments de la ligne de commande */
-    Scan_Args(argc, argv);
+    //Scan_Args(argc, argv);
 
     /* Initialisation du cache */
-    if ((The_Cache = Cache_Create(File, N_Blocks_in_Cache, N_Records_per_Block,
+    /*if ((The_Cache = Cache_Create(File, N_Blocks_in_Cache, N_Records_per_Block,
                                   Record_Size, N_Deref)) == NULL)
 	Error("Cache_Init");
-    Print_Parameters();
+    Print_Parameters();*/
 
     /* Exécution des tests */
-    for (i = 0; i < NTESTS; ++i)
+    /*for (i = 0; i < NTESTS; ++i)
     {
         if (Do_Test[i]) Tests[i]();
-    }
+    }*/
 
     /* Fermeture du cache */
-    if (!Cache_Close(The_Cache)) Error("Cache_Close");
+    //if (!Cache_Close(The_Cache)) Error("Cache_Close");
 
     return 0;
 }
