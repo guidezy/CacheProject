@@ -129,10 +129,13 @@ Cache_Error Cache_Write(struct Cache *pcache, int irfile, const void *precord)
 		fetchDataFromFile(pcache, block, pcache->fp, ibfile);
 
 		//Copy record to block
+		memcpy(block->data[irblock], precord, pcache->recordsz);
 
 		//Mark it as modified
+		block->flags = block->flags | MODIF;
 
 		//Return
+		return CACHE_OK;
 	}
 
 	/*
