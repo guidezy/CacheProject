@@ -68,6 +68,9 @@ struct Cache* Cache_Create(const char *fic, unsigned nblocks, unsigned nrecords,
 	cache->instrument = (struct Cache_Instrument){0,0,0,0,0}; //Met à zero tous les champs de instrument
 
 	cache->headers = (struct Cache_Block_Header*)malloc( cache->blocksz * nblocks );
+	for(int i = 0; i < cache->nblocks; i++)
+		cache->headers[i].ibcache = i;
+
 	cache->pfree = &cache->headers[0];
 	cache->pstrategy = Strategy_Create(cache);
 
@@ -96,7 +99,7 @@ Cache_Error Cache_Invalidate(struct Cache *pcache)
 	for(int i = 0; i < pcache->nblocks; i++)
 		pcache->headers[i].flags = pcache->headers[i].flags & !VALID;
 
-	Strategy_Invalidade(pcache);
+	Strategy_Invalidate(pcache);
 }
 
 struct Cache_Instrument *Cache_Get_Instrument(struct Cache *pcache)
@@ -157,12 +160,18 @@ Cache_Error Cache_Write(struct Cache *pcache, int irfile, const void *precord)
 	if(block->flags & MODIF)
 		sendDataToFile(pcache, block, pcache->fp);
 
+	//Fetch data from file
+	fetchDataFromFile(pcache, block, pcache->fp, ibfile);
+
 	//Copy record to block
 	memcpy(block->data[irblock], precord, pcache->recordsz);
 
-	//Change block info
+	//Update block info
 	block->flags = block->flags | MODIF;
 	block->ibfile = ibfile;
+
+	//REFLEX CALL
+	Strategy_Write(pcache, block);
 
 	//Return
 	return CACHE_OK;
