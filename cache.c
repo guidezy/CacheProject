@@ -55,3 +55,9 @@ Cache_Error Cache_Close(struct Cache *pcache)
 
 	return CACHE_OK;
 }
+
+Cache_Error Cache_Invalidate(struct Cache *pcache)
+{
+	for(int i = 0; i < pcache->nblocks; i++)
+		pcache->headers[i].flags = pcache->headers[i].flags & !VALID;
+}
