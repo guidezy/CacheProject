@@ -117,7 +117,24 @@ struct Cache_Instrument *Cache_Get_Instrument(struct Cache *pcache)
 Cache_Error Cache_Sync(struct Cache *pcache)
 {
 	for(int i = 0; i < pcache->nblocks; i++)
-		sendDataToFile(pcache, pcache->headers[i], pcache->fp);
+		sendDataToFile(pcache, &pcache->headers[i], pcache->fp);
+}
+
+struct Cache_Block_Header *Get_Free_Block(struct Cache *pcache)
+{
+	struct Cache_Block_Header* free = pcache->pfree;
+
+	//Search next free block
+	for(int i = 0; i < pcache->nblocks; i++)
+		if( !(pcache->headers[i].flags & VALID) )
+		{
+			pcache->pfree = &pcache->headers[i];
+			break;
+		}
+
+	if(free) free->flags = free->flags | VALID;
+
+	return free;
 }
 
 Cache_Error Cache_Write(struct Cache *pcache, int irfile, const void *precord)
@@ -154,6 +171,7 @@ Cache_Error Cache_Write(struct Cache *pcache, int irfile, const void *precord)
 
 		//Mark it as modified
 		block->flags = block->flags | MODIF;
+		block->flags = block->flags | VALID;
 
 		//Return
 		return CACHE_OK;
