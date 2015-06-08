@@ -2,6 +2,7 @@ Plots/
 *.pdf
 *.o
 *.out
+foo
 tst_Cache_RAND
 tst_Cache_FIFO
 tst_Cache_LRU
