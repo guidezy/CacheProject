@@ -71,8 +71,9 @@ Cache_Error Cache_Close(struct Cache *pcache)
 	//Synchroniser les choses - faut tester si y a des erreurs retournés par Cache_Sync!
 	Cache_Sync(pcache);
 
-	//Fermer les fichiers
+	//Fermer ce qu'il faut
 	fclose(pcache->fp);
+	Strategy_Close(pcache->pstrategy);
 
 	//Free tous les structs
 	free( pcache->headers );
@@ -138,13 +139,10 @@ Cache_Error Cache_Write(struct Cache *pcache, int irfile, const void *precord)
 		return CACHE_OK;
 	}
 
-	/*
-	— Si le cache ne contient pas l’enregistrement demandé, on cherche un bloc libre (i.e.,
-	invalide V = 0) dans le cache et y copie tout le bloc du fichier contenant l’enregistrement
-	d’index (irfile) ; on peut alors effectuer le transfert de ou vers le buffer de
-	l’utilisateur ; on laisse bien entendu le bloc dans le cas pour le cas où il serait accédé
-	ultérieurement ;
+	//NO FREE POSITION
 
+
+	/*
 	— Si l’opération précédente n’est pas possible car le cache est plein (i.e., tous ses blocs
 	sont valides), on libère un des blocs du cache pour y copier le bloc disque et donc ainsi
 	changer son affectation (le nouveau bloc est alors marqué valide V = 1 et non modifié
