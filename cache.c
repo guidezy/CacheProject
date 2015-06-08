@@ -86,6 +86,8 @@ Cache_Error Cache_Invalidate(struct Cache *pcache)
 {
 	for(int i = 0; i < pcache->nblocks; i++)
 		pcache->headers[i].flags = pcache->headers[i].flags & !VALID;
+
+	Strategy_Invalidade(pcache);
 }
 
 struct Cache_Instrument *Cache_Get_Instrument(struct Cache *pcache)
@@ -140,7 +142,7 @@ Cache_Error Cache_Write(struct Cache *pcache, int irfile, const void *precord)
 	}
 
 	//NO FREE POSITION
-
+	block = Strategy_Replace_Block(pcache);
 
 	/*
 	— Si l’opération précédente n’est pas possible car le cache est plein (i.e., tous ses blocs
