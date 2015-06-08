@@ -17,8 +17,8 @@ struct Cache* Cache_Create(const char *fic, unsigned nblocks, unsigned nrecords,
 {
 	//Ouvre le fichier FIC - et le crée si ça existe pas encore
 	FILE *file;
-	if( (file = fopen(fic, "r+")) == NULL)
-		file = fopen(fic, "w+");
+	if( (file = fopen(fic, "r+b")) == NULL)
+		file = fopen(fic, "w+b");
 
 	//Alloue un nouveau struct Cache*
 	struct Cache* cache = malloc( sizeof(struct Cache) );
