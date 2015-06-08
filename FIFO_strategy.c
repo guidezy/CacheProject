@@ -25,13 +25,13 @@ void *Strategy_Create(struct Cache *pcache)
 
 void Strategy_Close(struct Cache *pcache)
 {
-	Cache_List_Delete(&pcache->pstrategy);
+	Cache_List_Delete(pcache->pstrategy);
 }
 
 
 void Strategy_Invalidate(struct Cache *pcache)
 {
-
+	Cache_List_Clear(pcache->pstrategy);
 }
 
 
@@ -41,9 +41,14 @@ struct Cache_Block_Header *Strategy_Replace_Block(struct Cache *pcache)
     struct Cache_Block_Header *pbh;
 
     /* On cherche d'abord un bloc invalide */
-    if ((pbh = Get_Free_Block(pcache)) != NULL) return pbh;
-
-    return &pcache->pstrategy;
+    if ((pbh = Get_Free_Block(pcache)) != NULL) {
+    	Cache_List_Append(pcache->pstrategy,pbh);
+    	return pbh;
+    }
+    pbh=Cache_List_Remove_First(pcache->pstrategy);
+	Cache_List_Append(pcache->pstrategy, pbh);
+    
+    return pbh;
 }
 
 
