@@ -41,11 +41,11 @@ static void initNUR(struct Cache *pcache){
  */
 static void Count_n_de_Ref(struct Cache *pcache, struct Cache_Block_Header *pbh){
     count_nderef++;
-    if ((pbh->flags % deuxR != (R + VALID + MODIF)) && (pbh->flags % deuxR != (R + VALID))){
-        pbh->flags += R;
-    }
     if (count_nderef >= pcache->nderef){
         initNUR(pcache);
+    }
+    if ((pbh->flags % deuxR != (R + VALID + MODIF)) && (pbh->flags % deuxR != (R + VALID))){
+        pbh->flags += R;
     }
 }
 
@@ -90,35 +90,25 @@ struct Cache_Block_Header *Strategy_Replace_Block(struct Cache *pcache)
     if ((pbh = Get_Free_Block(pcache)) != NULL){
         return pbh;
     }
-
-    for (int i = 0; i < pcache->nblocks; ++i)
-        if ((pcache->headers)[i].flags % deuxR == VALID){
-            #ifdef DEBUG
-            c1++;
-            #endif
-            return &pcache->headers[i];
+    int min = RANDOM(0, pcache->nblocks);
+    for(int i = 0; i < pcache->nblocks; i++){
+        if((pcache->headers)[min].flags % deuxR > (pcache->headers)[i].flags % deuxR){
+            min = i;
         }
-
-    for (int i = 0; i < pcache->nblocks; ++i)
-        if ((pcache->headers)[i].flags % deuxR == (VALID + MODIF)){
-            #ifdef DEBUG
-            c2++;
-            #endif
-            return &pcache->headers[i];
-        }
-
-    for (int i = 0; i < pcache->nblocks; ++i)
-        if ((pcache->headers)[i].flags % deuxR == (VALID + R)){
-            #ifdef DEBUG
-            c3++;
-            #endif
-            return &pcache->headers[i];
-        }
+    }
+    
     #ifdef DEBUG
-    c4++;
+    if ((pcache->headers)[min].flags % deuxR == VALID)
+        c1++;
+    else if ((pcache->headers)[min].flags % deuxR == (VALID + MODIF))
+        c2++;
+    else if ((pcache->headers)[min].flags % deuxR == (VALID + R))
+        c3++;
+    else
+        c4++;
     #endif
-    // si on ne trouve rien, on tire un bloc aleatoire.
-    return &pcache->headers[RANDOM(0, pcache->nblocks)];
+    
+    return &(pcache->headers)[min];
 }
 
 /*!
