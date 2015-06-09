@@ -100,32 +100,33 @@ bool Cache_List_Is_Empty(struct Cache_List *list){
 void Cache_List_Move_To_End(struct Cache_List *list,
                             struct Cache_Block_Header *pbh)
 {
-	Cache_List current = list;
-	while(current->next != NULL){
-		if(pbh == current->pheader){
+	if(list->prev->pheader == pbh) return;
+	struct Cache_List iterater;
+	for(iterater = list->next; iterater != list;iterater = iterater->next){
+		if(pbh == iterater->pheader){
 			Cache_List_Remove(list,pbh);
 		}
-		current = current->next;
 	}
-	if(current->pheader == pbh) return;
-	pbh->prev = current;
-	current->next = pbh;
+	pbh->prev = iterater;
+	pbh->next = list;
+	list->prev = pbh;
+	iterater->next = pbh;
 }
 /*! Transférer un élément  au début */
 void Cache_List_Move_To_Begin(struct Cache_List *list,
                               struct Cache_Block_Header *pbh)
 {
 	if(list->pheader == pbh) return;
-	Cache_List current = list;
-	while(current->next != NULL){
-		if(pbh == current->pheader){
-			list->prev = Cache_List_Remove(current,pbh);
-			return;
+	struct Cache_List iterater;
+	for(iterater = list->next; iterater != list;iterater = iterater->next){
+		if(pbh == iterater->pheader){
+			Cache_List_Remove(list,pbh);
 		}
-		current = current->next;
 	}
+	pbh->prev = iterater;
 	pbh->next = list;
 	list->prev = pbh;
+	iterater->next = pbh;
 }
 
 /*
