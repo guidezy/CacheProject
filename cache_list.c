@@ -8,6 +8,7 @@ struct Cache_List *Cache_List_Create(){
 	struct Cache_List * c = malloc(sizeof(struct Cache_List)); 
 	c->prev = c; 
 	c->next =c; 
+	c->pheader=NULL; 
 	return c; 
 }
 
