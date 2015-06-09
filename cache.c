@@ -66,6 +66,15 @@ void syncTimer(struct Cache* pcache)
 		N_ACCESS_CACHE++;
 }
 
+void record2Block(struct Cache_Block_Header* block, void* record, int recordsz, int irblock)
+{
+	//Copy PRECORD
+	unsigned long addressInBytes = recordsz * irblock;
+	memcpy(&block->data[addressInBytes], record, recordsz);
+
+	block->flags |= MODIF;
+}
+
 //----------------------------------
 //--------- FROM CACHE.C -----------
 //----------------------------------
@@ -197,9 +206,7 @@ Cache_Error Cache_Write(struct Cache *pcache, int irfile, const void *precord)
 
 		//The block is inside the cache! Update value and mark it as modified
 		struct Cache_Block_Header block = pcache->headers[blockIndex];
-
-		memcpy(&block.data[pcache->recordsz * irblock], precord, pcache->recordsz );
-		block.flags |= MODIF;
+		record2Block(&block, precord, pcache->recordsz, irblock);
 
 		//Update statistics
 		pcache->instrument.n_writes++;
@@ -217,11 +224,8 @@ Cache_Error Cache_Write(struct Cache *pcache, int irfile, const void *precord)
 		//Fetch data from file
 		fetchDataFromFile(pcache, block, pcache->fp, ibfile);
 
-		//Copy record to block - NOT SURE THIS WORKS PROPERLY
-		memcpy(&block->data[pcache->recordsz * irblock], precord, pcache->recordsz);
-
-		//Mark it as modified
-		block->flags |= MODIF;
+		//Copy record to block
+		record2Block(block, precord, pcache->recordsz, irblock);
 
 		//Update statistics
 		pcache->instrument.n_writes++;
@@ -241,10 +245,7 @@ Cache_Error Cache_Write(struct Cache *pcache, int irfile, const void *precord)
 	fetchDataFromFile(pcache, block, pcache->fp, ibfile);
 
 	//Copy record to block
-	memcpy(&block->data[pcache->recordsz * irblock], precord, pcache->recordsz);
-
-	//Mark as modified
-	block->flags |= MODIF;
+	record2Block(block, precord, pcache->recordsz, irblock);
 
 	//REFLEX CALL
 	Strategy_Write(pcache, block);
