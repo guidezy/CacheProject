@@ -75,6 +75,12 @@ void record2Block(struct Cache_Block_Header* block, void* record, int recordsz, 
 	block->flags |= MODIF;
 }
 
+void block2Record(struct Cache_Block_Header* block, void* record, int recordsz, int irblock)
+{
+	unsigned long addressInBytes = recordsz * irblock;
+	memcpy(record, &block->data[addressInBytes], recordsz);
+}
+
 //----------------------------------
 //--------- FROM CACHE.C -----------
 //----------------------------------
@@ -91,7 +97,6 @@ struct Cache* Cache_Create(const char *fic, unsigned nblocks, unsigned nrecords,
 	
 	cache->file = fic;
 	cache->fp = file;
-
 	cache->nderef = nderef;
 	cache->nblocks = nblocks;
 	cache->nrecords = nrecords;
@@ -273,8 +278,8 @@ Cache_Error Cache_Read(struct Cache *pcache, int irfile, void *precord)
 
 		//The block is inside the cache! Copy the entry to precord		
 		struct Cache_Block_Header block = pcache->headers[blockIndex];
-		memcpy( precord, &block.data[pcache->recordsz * irblock], pcache->recordsz );
-
+		block2Record(&block, precord, pcache->recordsz, irblock);
+		
 		//Update statistics
 		pcache->instrument.n_reads++;
 
@@ -292,7 +297,7 @@ Cache_Error Cache_Read(struct Cache *pcache, int irfile, void *precord)
 		fetchDataFromFile(pcache, block, pcache->fp, ibfile);
 
 		//Copy record to block
-		memcpy(precord, &block->data[pcache->recordsz * irblock], pcache->recordsz);
+		block2Record(block, precord, pcache->recordsz, irblock);
 
 		//Update statistics
 		pcache->instrument.n_reads++;
@@ -312,7 +317,7 @@ Cache_Error Cache_Read(struct Cache *pcache, int irfile, void *precord)
 	fetchDataFromFile(pcache, block, pcache->fp, ibfile);
 
 	//Copy block entry to buffer
-	memcpy(precord, &block->data[pcache->recordsz * irblock], pcache->recordsz);
+	block2Record(block, precord, pcache->recordsz, irblock);
 
 	//REFLEX CALL
 	Strategy_Read(pcache, block);
