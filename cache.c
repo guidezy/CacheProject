@@ -107,7 +107,7 @@ Cache_Error Cache_Close(struct Cache *pcache)
 Cache_Error Cache_Invalidate(struct Cache *pcache)
 {
 	for(int i = 0; i < pcache->nblocks; i++)
-		pcache->headers[i].flags = pcache->headers[i].flags & ~VALID;
+		pcache->headers[i].flags &= ~VALID;
 
 	Strategy_Invalidate(pcache);
 
@@ -131,7 +131,7 @@ Cache_Error Cache_Sync(struct Cache *pcache)
 	for(int i = 0; i < pcache->nblocks; i++)
 	{
 		sendDataToFile(pcache, &pcache->headers[i], pcache->fp);
-		pcache->headers[i].flags = pcache->headers[i].flags & ~MODIF;
+		pcache->headers[i].flags &= ~MODIF;
 	}
 
 	return CACHE_OK;
@@ -143,7 +143,7 @@ struct Cache_Block_Header *Get_Free_Block(struct Cache *pcache)
 
 	if(!free) return NULL;
 
-	free->flags = free->flags | VALID;
+	free->flags |= VALID;
 
 	//Search next free block
 	int i;
@@ -226,7 +226,8 @@ Cache_Error Cache_Write(struct Cache *pcache, int irfile, const void *precord)
 	memcpy(&block->data[pcache->recordsz * irblock], precord, pcache->recordsz);
 
 	//Update block info
-	block->flags = block->flags | MODIF;
+	block->flags |= MODIF;
+	block->flags |= VALID;
 	block->ibfile = ibfile;
 
 	//REFLEX CALL
@@ -275,7 +276,7 @@ Cache_Error Cache_Read(struct Cache *pcache, int irfile, void *precord)
 		memcpy(precord, &block->data[pcache->recordsz * irblock], pcache->recordsz);
 
 		//Mark it as valid
-		block->flags = block->flags | VALID;
+		block->flags |= VALID;
 		block->ibfile = ibfile;
 
 		//Update statistics
@@ -300,6 +301,7 @@ Cache_Error Cache_Read(struct Cache *pcache, int irfile, void *precord)
 
 	//Update block info
 	block->ibfile = ibfile;
+	block->flags |= VALID;
 
 	//REFLEX CALL
 	Strategy_Read(pcache, block);
