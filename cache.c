@@ -78,9 +78,7 @@ struct Cache* Cache_Create(const char *fic, unsigned nblocks, unsigned nrecords,
 	{
 		cache->headers[i].ibcache = i;
 		cache->headers[i].data = (char*)malloc( cache->recordsz * cache->nrecords );
-
-		for(int j = 0; j < cache->recordsz * cache->nrecords; j++)
-			cache->headers[i].data[j] = 'w';
+		cache->headers[i].ibfile = -1;
 	}
 
 	cache->pfree = &cache->headers[0];
@@ -109,7 +107,7 @@ Cache_Error Cache_Close(struct Cache *pcache)
 Cache_Error Cache_Invalidate(struct Cache *pcache)
 {
 	for(int i = 0; i < pcache->nblocks; i++)
-		pcache->headers[i].flags = pcache->headers[i].flags & !VALID;
+		pcache->headers[i].flags = pcache->headers[i].flags & ~VALID;
 
 	Strategy_Invalidate(pcache);
 
@@ -131,7 +129,10 @@ struct Cache_Instrument *Cache_Get_Instrument(struct Cache *pcache)
 Cache_Error Cache_Sync(struct Cache *pcache)
 {
 	for(int i = 0; i < pcache->nblocks; i++)
+	{
 		sendDataToFile(pcache, &pcache->headers[i], pcache->fp);
+		pcache->headers[i].flags = pcache->headers[i].flags & ~MODIF;
+	}
 
 	return CACHE_OK;
 }
@@ -166,13 +167,22 @@ Cache_Error Cache_Write(struct Cache *pcache, int irfile, const void *precord)
 	int irblock = irfile % pcache->nrecords; //Index inside a block
 	int blockIndex = searchIndexInCache(ibfile, pcache);
 
+	//printf("irfile: %d, ibfile: %d, irblock: %d, block index: %d\n", irfile, ibfile, irblock, blockIndex);
+
 	if(blockIndex >= 0)
 	{
+		//printf("--------------- CACHE HIT -----------------\n");
+		//Cache hit!
+		pcache->instrument.n_hits++;
+
 		//The block is inside the cache! Update value and mark it as modified
 		struct Cache_Block_Header block = pcache->headers[blockIndex];
 
 		memcpy(&block.data[pcache->recordsz * irblock], precord, pcache->recordsz );
 		block.flags = block.flags | MODIF;
+
+		//Update statistics
+		pcache->instrument.n_writes++;
 
 		return CACHE_OK;
 	}
@@ -194,6 +204,9 @@ Cache_Error Cache_Write(struct Cache *pcache, int irfile, const void *precord)
 		block->ibfile = ibfile;
 		block->flags = block->flags | MODIF;
 		block->flags = block->flags | VALID;
+
+		//Update statistics
+		pcache->instrument.n_writes++;
 
 		//Return
 		return CACHE_OK;
@@ -219,6 +232,9 @@ Cache_Error Cache_Write(struct Cache *pcache, int irfile, const void *precord)
 	//REFLEX CALL
 	Strategy_Write(pcache, block);
 
+	//Update statistics
+	pcache->instrument.n_writes++;
+
 	//Return
 	return CACHE_OK;
 }
@@ -232,9 +248,15 @@ Cache_Error Cache_Read(struct Cache *pcache, int irfile, void *precord)
 
 	if(blockIndex >= 0)
 	{
+		//Cache hit!
+		pcache->instrument.n_hits++;
+
 		//The block is inside the cache! Copy the entry to precord		
 		struct Cache_Block_Header block = pcache->headers[blockIndex];
 		memcpy( precord, &block.data[pcache->recordsz * irblock], pcache->recordsz );
+
+		//Update statistics
+		pcache->instrument.n_reads++;
 
 		return CACHE_OK;
 	}
@@ -250,10 +272,14 @@ Cache_Error Cache_Read(struct Cache *pcache, int irfile, void *precord)
 		fetchDataFromFile(pcache, block, pcache->fp, ibfile);
 
 		//Copy record to block
-		memcpy(precord, block->data[irblock], pcache->recordsz);
+		memcpy(precord, &block->data[pcache->recordsz * irblock], pcache->recordsz);
 
 		//Mark it as valid
 		block->flags = block->flags | VALID;
+		block->ibfile = ibfile;
+
+		//Update statistics
+		pcache->instrument.n_reads++;
 
 		//Return
 		return CACHE_OK;
@@ -277,6 +303,9 @@ Cache_Error Cache_Read(struct Cache *pcache, int irfile, void *precord)
 
 	//REFLEX CALL
 	Strategy_Read(pcache, block);
+
+	//Update statistics
+	pcache->instrument.n_reads++;
 
 	return CACHE_OK;
 }
