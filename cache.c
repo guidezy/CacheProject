@@ -50,6 +50,9 @@ void sendDataToFile(struct Cache* pcache, struct Cache_Block_Header* block, FILE
 	//Copy block data to file
 	fwrite(block->data, pcache->recordsz, pcache->nrecords, file);
 
+	//Set flags
+	block->flags &= ~MODIF;
+
 	//Rewind file
 	rewind(file);
 }
