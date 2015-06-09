@@ -81,6 +81,77 @@ void block2Record(struct Cache_Block_Header* block, void* record, int recordsz, 
 	memcpy(record, &block->data[addressInBytes], recordsz);
 }
 
+
+typedef void (*ReflexCallback)(struct Cache *,struct Cache_Block_Header*);
+typedef void (*MemTransfCallback)(struct Cache_Block_Header*,void*,int,int);
+Cache_Error CacheManager(struct Cache *pcache, int irfile, const void *precord, 
+	ReflexCallback reflexCallback, MemTransfCallback memTransfCallback, int* statistic)
+{
+	syncTimer(pcache);
+
+	//Calculate to which block IRFILE belongs, then verify if it's in the cache
+	int ibfile = irfile / pcache->nrecords; //Number of the block which contains this entry
+	int irblock = irfile % pcache->nrecords; //Index inside a block
+	int blockIndex = searchIndexInCache(ibfile, pcache);
+
+	if(blockIndex >= 0)
+	{
+		//Cache hit!
+		pcache->instrument.n_hits++;
+
+		//The block is inside the cache! Copy the entry to precord		
+		struct Cache_Block_Header block = pcache->headers[blockIndex];
+		memTransfCallback(&block, precord, pcache->recordsz, irblock);
+		
+		//Update statistics
+		(*statistic)++;
+
+		return CACHE_OK;
+	}
+
+	//BLOCK IS NOT IN CACHE
+	//Try to fetch block in some free position
+	struct Cache_Block_Header* block = Get_Free_Block(pcache);
+
+	if(block != NULL)
+	{
+		//We found some free space to put our data!
+		//Fetch data from file
+		fetchDataFromFile(pcache, block, pcache->fp, ibfile);
+
+		//Copy record to block
+		memTransfCallback(block, precord, pcache->recordsz, irblock);
+
+		//Update statistics
+		(*statistic)++;
+
+		//Return
+		return CACHE_OK;
+	}
+
+	//NO FREE POSITION
+	block = Strategy_Replace_Block(pcache);
+
+	//Synchronize with file before substitution
+	if(block->flags & MODIF)
+		sendDataToFile(pcache, block, pcache->fp);
+
+	//Fetch data from file
+	fetchDataFromFile(pcache, block, pcache->fp, ibfile);
+
+	//Copy block entry to buffer
+	memTransfCallback(block, precord, pcache->recordsz, irblock);
+
+	//REFLEX CALL
+	reflexCallback(pcache, block);
+
+	//Update statistics
+	(*statistic)++;
+
+	return CACHE_OK;
+}
+
+
 //----------------------------------
 //--------- FROM CACHE.C -----------
 //----------------------------------
@@ -264,66 +335,5 @@ Cache_Error Cache_Write(struct Cache *pcache, int irfile, const void *precord)
 
 Cache_Error Cache_Read(struct Cache *pcache, int irfile, void *precord)
 {
-	syncTimer(pcache);
-
-	//Calculate to which block IRFILE belongs, then verify if it's in the cache
-	int ibfile = irfile / pcache->nrecords; //Number of the block which contains this entry
-	int irblock = irfile % pcache->nrecords; //Index inside a block
-	int blockIndex = searchIndexInCache(ibfile, pcache);
-
-	if(blockIndex >= 0)
-	{
-		//Cache hit!
-		pcache->instrument.n_hits++;
-
-		//The block is inside the cache! Copy the entry to precord		
-		struct Cache_Block_Header block = pcache->headers[blockIndex];
-		block2Record(&block, precord, pcache->recordsz, irblock);
-		
-		//Update statistics
-		pcache->instrument.n_reads++;
-
-		return CACHE_OK;
-	}
-
-	//BLOCK IS NOT IN CACHE
-	//Try to fetch block in some free position
-	struct Cache_Block_Header* block = Get_Free_Block(pcache);
-
-	if(block != NULL)
-	{
-		//We found some free space to put our data!
-		//Fetch data from file
-		fetchDataFromFile(pcache, block, pcache->fp, ibfile);
-
-		//Copy record to block
-		block2Record(block, precord, pcache->recordsz, irblock);
-
-		//Update statistics
-		pcache->instrument.n_reads++;
-
-		//Return
-		return CACHE_OK;
-	}
-
-	//NO FREE POSITION
-	block = Strategy_Replace_Block(pcache);
-
-	//Synchronize with file before substitution
-	if(block->flags & MODIF)
-		sendDataToFile(pcache, block, pcache->fp);
-
-	//Fetch data from file
-	fetchDataFromFile(pcache, block, pcache->fp, ibfile);
-
-	//Copy block entry to buffer
-	block2Record(block, precord, pcache->recordsz, irblock);
-
-	//REFLEX CALL
-	Strategy_Read(pcache, block);
-
-	//Update statistics
-	pcache->instrument.n_reads++;
-
-	return CACHE_OK;
+	return CacheManager(pcache, irfile, precord, &Strategy_Read, &block2Record, &pcache->instrument.n_reads);
 }
