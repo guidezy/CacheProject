@@ -43,22 +43,28 @@ Cache_Error fetchDataFromFile(struct Cache* pcache, struct Cache_Block_Header* b
 	//Rewind file
 	rewind(file);
 
-	return;
+	return CACHE_OK;
 }
 
-void sendDataToFile(struct Cache* pcache, struct Cache_Block_Header* block, FILE* file)
+Cache_Error sendDataToFile(struct Cache* pcache, struct Cache_Block_Header* block, FILE* file)
 {
+	if(!block || !pcache || !file) return CACHE_KO;
+
 	//Position cursor in correct position inside FILE
-	fseek(file, DADDR(pcache, block->ibfile), SEEK_SET);	
+	if( fseek(file, DADDR(pcache, block->ibfile), SEEK_SET) != 0)
+		return CACHE_KO;	
 
 	//Copy block data to file
-	fwrite(block->data, pcache->recordsz, pcache->nrecords, file);
+	if( fwrite(block->data, pcache->recordsz, pcache->nrecords, file) != pcache->nrecords)
+		return CACHE_KO;
 
 	//Set flags
 	block->flags &= ~MODIF;
 
 	//Rewind file
 	rewind(file);
+
+	return CACHE_OK;
 }
 
 static int N_ACCESS_CACHE = 0;
@@ -142,7 +148,7 @@ Cache_Error CacheManager(struct Cache *pcache, int irfile, const void *precord,
 
 	//Synchronize with file before substitution
 	if(block->flags & MODIF)
-		sendDataToFile(pcache, block, pcache->fp);
+		if( sendDataToFile(pcache, block, pcache->fp) == CACHE_KO) return CACHE_KO;
 
 	//Fetch data from file
 	if( fetchDataFromFile(pcache, block, pcache->fp, ibfile) == CACHE_KO)
@@ -258,7 +264,9 @@ Cache_Error Cache_Sync(struct Cache *pcache)
 
 	for(int i = 0; i < pcache->nblocks; i++)
 	{
-		sendDataToFile(pcache, &pcache->headers[i], pcache->fp);
+		if( sendDataToFile(pcache, &pcache->headers[i], pcache->fp) == CACHE_KO)
+			return CACHE_KO;
+
 		pcache->headers[i].flags &= ~MODIF;
 	}
 
