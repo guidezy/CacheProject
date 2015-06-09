@@ -145,8 +145,10 @@ struct Cache_Block_Header *Get_Free_Block(struct Cache *pcache)
 {
 	struct Cache_Block_Header* free = pcache->pfree;
 
+	//If FREE = null, all blocks are being used. Return NULL
 	if(!free) return NULL;
 
+	//Mark this block as being used
 	free->flags |= VALID;
 
 	//Search next free block
@@ -159,7 +161,7 @@ struct Cache_Block_Header *Get_Free_Block(struct Cache *pcache)
 		}
 
 	if(i == pcache->nblocks)
-		pcache->pfree = NULL;
+		pcache->pfree = NULL; //All blocks are busy. The next free is NULL, then
 
 	return free;
 }
@@ -179,11 +181,8 @@ Cache_Error Cache_Write(struct Cache *pcache, int irfile, const void *precord)
 	int irblock = irfile % pcache->nrecords; //Index inside a block
 	int blockIndex = searchIndexInCache(ibfile, pcache);
 
-	//printf("irfile: %d, ibfile: %d, irblock: %d, block index: %d\n", irfile, ibfile, irblock, blockIndex);
-
 	if(blockIndex >= 0)
 	{
-		//printf("--------------- CACHE HIT -----------------\n");
 		//Cache hit!
 		pcache->instrument.n_hits++;
 
@@ -191,7 +190,7 @@ Cache_Error Cache_Write(struct Cache *pcache, int irfile, const void *precord)
 		struct Cache_Block_Header block = pcache->headers[blockIndex];
 
 		memcpy(&block.data[pcache->recordsz * irblock], precord, pcache->recordsz );
-		block.flags = block.flags | MODIF;
+		block.flags |= MODIF;
 
 		//Update statistics
 		pcache->instrument.n_writes++;
@@ -214,8 +213,8 @@ Cache_Error Cache_Write(struct Cache *pcache, int irfile, const void *precord)
 
 		//Mark it as modified and update index
 		block->ibfile = ibfile;
-		block->flags = block->flags | MODIF;
-		block->flags = block->flags | VALID;
+		block->flags |= MODIF;
+		block->flags |= VALID;
 
 		//Update statistics
 		pcache->instrument.n_writes++;
