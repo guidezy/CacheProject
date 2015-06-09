@@ -1,0 +1,76 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include "cache_list.h"
+
+
+/*! Création d'une liste de blocs */
+struct Cache_List *Cache_List_Create(){
+	struct Cache_List * c = malloc(sizeof(struct Cache_List)); 
+	c->prev = c; 
+	c->next =c; 
+	return c; 
+}
+
+/*! Destruction d'une liste de blocs */
+void Cache_List_Delete(struct Cache_List *list){
+	struct Cache_List * iterater; 
+	for(iterater=list->next; iterater!=list; iterater = iterater->next)
+	{	
+		iterater->prev->next = iterater ->next; 
+		iterater->next->prev = iterater->prev; 
+		free(iterater); 
+	} 
+
+
+}
+
+/*! Insertion d'un élément à la fin */
+void Cache_List_Append(struct Cache_List *list, struct Cache_Block_Header *pbh){
+	struct Cache_List * iterater; 
+	for(iterater=list->next; iterater!=list; iterater = iterater->next)
+	{	
+	} 
+	struct Cache_List * new = malloc(sizeof(struct Cache_List)); 
+	new->pheader = pbh;
+	new->next = iterater; 
+	new->prev = iterater->prev; 
+	
+	iterater->prev->next = new;
+	iterater->prev = new;
+}
+
+/*! Insertion d'un élément au début*/
+void Cache_List_Prepend(struct Cache_List *list, struct Cache_Block_Header *pbh){
+	struct Cache_List * new = malloc(sizeof(struct Cache_List)); 
+	new->pheader=pbh; 
+	new->next = list; 
+	new->prev = list->prev; 
+	
+	list->prev->next = new;
+	list->prev = new;
+
+}
+
+/*! Retrait du premier élément */
+struct Cache_Block_Header *Cache_List_Remove_First(struct Cache_List *list){
+	struct Cache_List * first = list; 
+	first->prev->next = first->next; 
+	first->next->prev = first->prev; 
+	return first; 
+}
+
+//Affiche 
+void Cache_List_Print(struct Cache_List * list){
+	printf("( ");
+	for(struct Cache_List * iterater=list->next; iterater!=list;iterater = iterater->next)
+	 {
+	 	printf("%d ",iterater->pheader->ibfile); 
+	 }
+	  printf(")\n"); 
+
+}
+int main(){
+	printf("Test de cache liste : \n");
+	
+
+}
