@@ -59,7 +59,7 @@ void *Strategy_Create(struct Cache *pcache)
  */
 void Strategy_Close(struct Cache *pcache){
     #ifdef DEBUG
-    printf("%d, %d, %d, %d.\n", c1, c2, c3, c4);
+    printf("nombre de remplacement de bloc par VALID, VALID+MODIF, VALID+R, VMR\n   %7d, %7d, %7d, %7d.\n", c1, c2, c3, c4);
     #endif
 }
 
@@ -70,7 +70,7 @@ void Strategy_Invalidate(struct Cache *pcache)
 {
     initNUR(pcache);
     #ifdef DEBUG
-    printf("%d, %d, %d, %d.\n", c1, c2, c3, c4);
+    printf("nombre de remplacement de bloc par VALID, VALID+MODIF, VALID+R, VMR\n   %7d, %7d, %7d, %7d.\n", c1, c2, c3, c4);
     #endif
 }
 
