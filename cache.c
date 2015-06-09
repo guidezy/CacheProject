@@ -67,16 +67,36 @@ Cache_Error sendDataToFile(struct Cache* pcache, struct Cache_Block_Header* bloc
 	return CACHE_OK;
 }
 
-static int N_ACCESS_CACHE = 0;
+void dereferenceBlocks(struct Cache* pcache)
+{
+	for(int i = 0; i < pcache->nblocks; i++)
+		pcache->headers[i].flags &= ~RECENTLY;
+
+	pcache->instrument.n_deref++;
+}
+
 void syncTimer(struct Cache* pcache)
 {
-	if(N_ACCESS_CACHE > NSYNC)
+	static int N_ACCESS_CACHE_SYNC = 0;
+	static int N_ACCESS_CACHE_DEREF = 0;
+
+	//Timer for synchronisation
+	if(N_ACCESS_CACHE_SYNC > NSYNC)
 	{
-		N_ACCESS_CACHE = 0;
+		N_ACCESS_CACHE_SYNC = 0;
 		Cache_Sync(pcache);
 	}
 	else
-		N_ACCESS_CACHE++;
+		N_ACCESS_CACHE_SYNC++;
+
+	//Timer for dereferencing
+	if(pcache->nderef > 0 && N_ACCESS_CACHE_DEREF > pcache->nderef)
+	{
+		N_ACCESS_CACHE_DEREF = 0;
+		dereferenceBlocks(pcache);
+	}
+	else
+		N_ACCESS_CACHE_DEREF++;
 }
 
 void record2Block(struct Cache_Block_Header* block, void* record, int recordsz, int irblock)
