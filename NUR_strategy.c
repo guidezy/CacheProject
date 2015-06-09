@@ -25,10 +25,11 @@ int c1 = 0; int c2 = 0; int c3 = 3; int c4 = 0;
 static void initNUR(struct Cache *pcache){
     count_nderef = 0;
     // on reinitialise les bit de references de tous les blocs
+    pcache->instrument.n_deref++;
     for (int i = 0; i < pcache->nblocks; ++i)
     {
-        if ((pcache->headers)[i].flags % deuxR == (R + VALID + MODIF)){
-            pcache->instrument.n_deref++;
+        if (((pcache->headers)[i].flags % deuxR == (R + VALID + MODIF)) 
+            && ((pcache->headers)[i].flags % deuxR != (R + VALID)) ){
             (pcache->headers)[i].flags -= R;
         }
     }
@@ -40,7 +41,7 @@ static void initNUR(struct Cache *pcache){
  */
 static void Count_n_de_Ref(struct Cache *pcache, struct Cache_Block_Header *pbh){
     count_nderef++;
-    if (pbh->flags % deuxR != (R + VALID + MODIF)){
+    if ((pbh->flags % deuxR != (R + VALID + MODIF)) && (pbh->flags % deuxR != (R + VALID))){
         pbh->flags += R;
     }
     if (count_nderef >= pcache->nderef){
@@ -86,8 +87,9 @@ void Strategy_Invalidate(struct Cache *pcache)
 struct Cache_Block_Header *Strategy_Replace_Block(struct Cache *pcache) 
 {
     struct Cache_Block_Header *pbh;
-    if ((pbh = Get_Free_Block(pcache)) != NULL) 
+    if ((pbh = Get_Free_Block(pcache)) != NULL){
         return pbh;
+    }
 
     for (int i = 0; i < pcache->nblocks; ++i)
         if ((pcache->headers)[i].flags % deuxR == VALID){
