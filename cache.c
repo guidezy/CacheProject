@@ -55,6 +55,16 @@ void sendDataToFile(struct Cache* pcache, struct Cache_Block_Header* block, FILE
 }
 
 static int N_ACCESS_CACHE = 0;
+void syncTimer(struct Cache* pcache)
+{
+	if(N_ACCESS_CACHE > NSYNC)
+	{
+		N_ACCESS_CACHE = 0;
+		Cache_Sync(pcache);
+	}
+	else
+		N_ACCESS_CACHE++;
+}
 
 //----------------------------------
 //--------- FROM CACHE.C -----------
@@ -173,13 +183,7 @@ struct Cache_Block_Header *Get_Free_Block(struct Cache *pcache)
 
 Cache_Error Cache_Write(struct Cache *pcache, int irfile, const void *precord)
 {	
-	if(N_ACCESS_CACHE > NSYNC)
-	{
-		N_ACCESS_CACHE = 0;
-		Cache_Sync(pcache);
-	}
-	else
-		N_ACCESS_CACHE++;
+	syncTimer(pcache);
 
 	//Calculate to which block IRFILE belongs, then verify if it's in the cache
 	int ibfile = irfile / pcache->nrecords; //Number of the block which contains this entry
@@ -254,13 +258,7 @@ Cache_Error Cache_Write(struct Cache *pcache, int irfile, const void *precord)
 
 Cache_Error Cache_Read(struct Cache *pcache, int irfile, void *precord)
 {
-	if(N_ACCESS_CACHE > NSYNC)
-	{
-		N_ACCESS_CACHE = 0;
-		Cache_Sync(pcache);
-	}
-	else
-		N_ACCESS_CACHE++;
+	syncTimer(pcache);
 
 	//Calculate to which block IRFILE belongs, then verify if it's in the cache
 	int ibfile = irfile / pcache->nrecords; //Number of the block which contains this entry
