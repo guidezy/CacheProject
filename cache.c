@@ -31,6 +31,11 @@ void fetchDataFromFile(struct Cache* pcache, struct Cache_Block_Header* block, F
 	//Copy BLOCKSZ bytes to block
 	fread(block->data, pcache->recordsz, pcache->nrecords, file);
 
+	//Set flags
+	block->flags |= VALID;
+	block->flags &= ~MODIF;
+	block->ibfile = ibfile;
+
 	//Rewind file
 	rewind(file);
 
@@ -211,10 +216,8 @@ Cache_Error Cache_Write(struct Cache *pcache, int irfile, const void *precord)
 		//Copy record to block - NOT SURE THIS WORKS PROPERLY
 		memcpy(&block->data[pcache->recordsz * irblock], precord, pcache->recordsz);
 
-		//Mark it as modified and update index
-		block->ibfile = ibfile;
+		//Mark it as modified
 		block->flags |= MODIF;
-		block->flags |= VALID;
 
 		//Update statistics
 		pcache->instrument.n_writes++;
@@ -236,10 +239,8 @@ Cache_Error Cache_Write(struct Cache *pcache, int irfile, const void *precord)
 	//Copy record to block
 	memcpy(&block->data[pcache->recordsz * irblock], precord, pcache->recordsz);
 
-	//Update block info
+	//Mark as modified
 	block->flags |= MODIF;
-	block->flags |= VALID;
-	block->ibfile = ibfile;
 
 	//REFLEX CALL
 	Strategy_Write(pcache, block);
@@ -294,11 +295,6 @@ Cache_Error Cache_Read(struct Cache *pcache, int irfile, void *precord)
 		//Copy record to block
 		memcpy(precord, &block->data[pcache->recordsz * irblock], pcache->recordsz);
 
-		//Mark it as valid
-		block->flags |= VALID;
-		block->flags &= ~MODIF;
-		block->ibfile = ibfile;
-
 		//Update statistics
 		pcache->instrument.n_reads++;
 
@@ -318,11 +314,6 @@ Cache_Error Cache_Read(struct Cache *pcache, int irfile, void *precord)
 
 	//Copy block entry to buffer
 	memcpy(precord, &block->data[pcache->recordsz * irblock], pcache->recordsz);
-
-	//Update block info
-	block->ibfile = ibfile;
-	block->flags |= VALID;
-	block->flags &= ~MODIF;
 
 	//REFLEX CALL
 	Strategy_Read(pcache, block);
