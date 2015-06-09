@@ -155,6 +155,23 @@ Cache_Error CacheManager(struct Cache *pcache, int irfile, const void *precord,
 }
 
 
+struct Cache_Block_Header* createBlocks(struct Cache* pcache)
+{
+	struct Cache_Block_Header* out = 
+			(struct Cache_Block_Header*)malloc( sizeof(struct Cache_Block_Header) * pcache->nblocks );
+
+	if(!out) return NULL;
+
+	for(int i = 0; i < pcache->nblocks; i++)
+	{
+		out[i].ibcache = i;
+		out[i].data = (char*)malloc( pcache->recordsz * pcache->nrecords );
+		out[i].ibfile = -1;
+	}
+
+	return out;
+}
+
 //----------------------------------
 //--------- FROM CACHE.C -----------
 //----------------------------------
@@ -178,17 +195,11 @@ struct Cache* Cache_Create(const char *fic, unsigned nblocks, unsigned nrecords,
 	cache->blocksz = nrecords * recordsz;
 	cache->instrument = (struct Cache_Instrument){0,0,0,0,0}; //Met à zero tous les champs de instrument
 
-	cache->headers = (struct Cache_Block_Header*)malloc( sizeof(struct Cache_Block_Header) * nblocks );
-	for(int i = 0; i < cache->nblocks; i++)
-	{
-		cache->headers[i].ibcache = i;
-		cache->headers[i].data = (char*)malloc( cache->recordsz * cache->nrecords );
-		cache->headers[i].ibfile = -1;
-	}
+	cache->headers = createBlocks(cache);
+	if(!cache->headers) return NULL;
 
 	cache->pfree = &cache->headers[0];
 	cache->pstrategy = Strategy_Create(cache);
-
 	
 	return cache;
 }
@@ -211,6 +222,8 @@ Cache_Error Cache_Close(struct Cache *pcache)
 
 Cache_Error Cache_Invalidate(struct Cache *pcache)
 {
+	if(!pcache || !pcache->headers) return CACHE_KO;
+
 	for(int i = 0; i < pcache->nblocks; i++)
 		pcache->headers[i].flags &= ~VALID;
 
