@@ -15,7 +15,7 @@
 #include "random.h"
 
 int count_nderef; //< va de 0 à nderef(du cache). sert à dire quand reinitialiser les bits R.
-int deuxR; //< une constante: R + VALUE + MODIF = deuxR - 1.
+int RVM; //< une constante: R + VALID + MODIF = RVM.
 #ifdef DEBUG
 int c1 = 0; int c2 = 0; int c3 = 3; int c4 = 0;
 #endif
@@ -50,7 +50,7 @@ static void Count_n_de_Ref(struct Cache *pcache, struct Cache_Block_Header *pbh)
 void *Strategy_Create(struct Cache *pcache) 
 {
     count_nderef = 0;
-    deuxR = 2 * R;
+    RVM = R + VALID + MODIF;
     return NULL;
 }
 
@@ -87,17 +87,17 @@ struct Cache_Block_Header *Strategy_Replace_Block(struct Cache *pcache)
     }
     int min = RANDOM(0, pcache->nblocks);
     for(int i = 0; i < pcache->nblocks; i++){
-        if((pcache->headers)[min].flags % deuxR > (pcache->headers)[i].flags % deuxR){
+        if(((pcache->headers)[min].flags & RVM) > ((pcache->headers)[i].flags & RVM)){
             min = i;
         }
     }
     
     #ifdef DEBUG
-    if ((pcache->headers)[min].flags % deuxR == VALID)
+    if (((pcache->headers)[min].flags & RVM) == VALID)
         c1++;
-    else if ((pcache->headers)[min].flags % deuxR == (VALID + MODIF))
+    else if (((pcache->headers)[min].flags & RVM) == (VALID + MODIF))
         c2++;
-    else if ((pcache->headers)[min].flags % deuxR == (VALID + R))
+    else if (((pcache->headers)[min].flags & RVM) == (VALID + R))
         c3++;
     else
         c4++;
