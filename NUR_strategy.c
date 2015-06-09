@@ -28,10 +28,7 @@ static void initNUR(struct Cache *pcache){
     pcache->instrument.n_deref++;
     for (int i = 0; i < pcache->nblocks; ++i)
     {
-        if (((pcache->headers)[i].flags % deuxR == (R + VALID + MODIF)) 
-            && ((pcache->headers)[i].flags % deuxR != (R + VALID)) ){
-            (pcache->headers)[i].flags -= R;
-        }
+        (pcache->headers)[i].flags &= ~R;
     }
 }
 
@@ -44,9 +41,7 @@ static void Count_n_de_Ref(struct Cache *pcache, struct Cache_Block_Header *pbh)
     if (count_nderef >= pcache->nderef){
         initNUR(pcache);
     }
-    if ((pbh->flags % deuxR != (R + VALID + MODIF)) && (pbh->flags % deuxR != (R + VALID))){
-        pbh->flags += R;
-    }
+    pbh->flags |= R;
 }
 
 /*!
