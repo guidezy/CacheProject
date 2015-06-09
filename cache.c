@@ -296,6 +296,7 @@ Cache_Error Cache_Read(struct Cache *pcache, int irfile, void *precord)
 
 		//Mark it as valid
 		block->flags |= VALID;
+		block->flags &= ~MODIF;
 		block->ibfile = ibfile;
 
 		//Update statistics
@@ -321,6 +322,7 @@ Cache_Error Cache_Read(struct Cache *pcache, int irfile, void *precord)
 	//Update block info
 	block->ibfile = ibfile;
 	block->flags |= VALID;
+	block->flags &= ~MODIF;
 
 	//REFLEX CALL
 	Strategy_Read(pcache, block);
