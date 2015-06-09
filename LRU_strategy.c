@@ -14,8 +14,7 @@
 
 void *Strategy_Create(struct Cache *pcache) 
 {
-    struct Cache_List *liste = Cache_List_Create();
-    pcache->pstrategy = liste; 
+    struct Cache_List *liste = Cache_List_Create(); 
     return liste; 
 }
 

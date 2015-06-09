@@ -37,7 +37,6 @@ void Strategy_Invalidate(struct Cache *pcache)
 
 struct Cache_Block_Header *Strategy_Replace_Block(struct Cache *pcache) 
 {
-	int ib;
     struct Cache_Block_Header *pbh;
 
     /* On cherche d'abord un bloc invalide */
