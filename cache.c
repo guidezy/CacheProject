@@ -23,13 +23,17 @@ int searchIndexInCache(int ibfile, struct Cache* pcache)
 	return -1;
 }
 
-void fetchDataFromFile(struct Cache* pcache, struct Cache_Block_Header* block, FILE* file, int ibfile)
+Cache_Error fetchDataFromFile(struct Cache* pcache, struct Cache_Block_Header* block, FILE* file, int ibfile)
 {
+	if(!block || !pcache || !file) return CACHE_KO;
+
 	//Position cursor in correct position inside FILE
-	fseek(file, DADDR(pcache, ibfile), SEEK_SET);
+	if( fseek(file, DADDR(pcache, ibfile), SEEK_SET) != 0 )
+		return CACHE_KO;
 
 	//Copy BLOCKSZ bytes to block
-	fread(block->data, pcache->recordsz, pcache->nrecords, file);
+	if( fread(block->data, pcache->recordsz, pcache->nrecords, file) != pcache->nrecords)
+		return CACHE_KO;
 
 	//Set flags
 	block->flags |= VALID;
@@ -120,7 +124,8 @@ Cache_Error CacheManager(struct Cache *pcache, int irfile, const void *precord,
 	{
 		//We found some free space to put our data!
 		//Fetch data from file
-		fetchDataFromFile(pcache, block, pcache->fp, ibfile);
+		if( fetchDataFromFile(pcache, block, pcache->fp, ibfile) == CACHE_KO )
+			return CACHE_KO;
 
 		//Copy record to block
 		memTransfCallback(block, precord, pcache->recordsz, irblock);
@@ -140,7 +145,8 @@ Cache_Error CacheManager(struct Cache *pcache, int irfile, const void *precord,
 		sendDataToFile(pcache, block, pcache->fp);
 
 	//Fetch data from file
-	fetchDataFromFile(pcache, block, pcache->fp, ibfile);
+	if( fetchDataFromFile(pcache, block, pcache->fp, ibfile) == CACHE_KO)
+		return CACHE_KO;
 
 	//Copy block entry to buffer
 	memTransfCallback(block, precord, pcache->recordsz, irblock);
@@ -217,6 +223,8 @@ Cache_Error Cache_Close(struct Cache *pcache)
 	free( pcache->headers );
 	free( pcache );
 
+	pcache = pcache->headers = NULL;
+
 	return CACHE_OK;
 }
 
@@ -246,6 +254,8 @@ struct Cache_Instrument *Cache_Get_Instrument(struct Cache *pcache)
 
 Cache_Error Cache_Sync(struct Cache *pcache)
 {
+	if(!pcache || !pcache->headers) return CACHE_KO;
+
 	for(int i = 0; i < pcache->nblocks; i++)
 	{
 		sendDataToFile(pcache, &pcache->headers[i], pcache->fp);
