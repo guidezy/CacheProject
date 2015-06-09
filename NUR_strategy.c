@@ -15,7 +15,10 @@
 #include "random.h"
 
 int count_nderef; //< va de 0 à nderef(du cache). sert à dire quand reinitialiser les bits R.
-
+int deuxR; //< une constante: R + VALUE + MODIF = deuxR - 1.
+#ifdef DEBUG
+int c1 = 0; int c2 = 0; int c3 = 3; int c4 = 0;
+#endif
 /*!
  * On reintialise tous bit de reference des blocs, ainsi que le compteur de nderef.
  */
@@ -24,7 +27,7 @@ static void initNUR(struct Cache *pcache){
     // on reinitialise les bit de references de tous les blocs
     for (int i = 0; i < pcache->nblocks; ++i)
     {
-        if ((pcache->headers)[i].flags % 0x8 == (R + VALID + MODIF)){
+        if ((pcache->headers)[i].flags % deuxR == (R + VALID + MODIF)){
             pcache->instrument.n_deref++;
             (pcache->headers)[i].flags -= R;
         }
@@ -37,7 +40,7 @@ static void initNUR(struct Cache *pcache){
  */
 static void Count_n_de_Ref(struct Cache *pcache, struct Cache_Block_Header *pbh){
     count_nderef++;
-    if (pbh->flags % 0x8 != (R + VALID + MODIF)){
+    if (pbh->flags % deuxR != (R + VALID + MODIF)){
         pbh->flags += R;
     }
     if (count_nderef >= pcache->nderef){
@@ -51,13 +54,18 @@ static void Count_n_de_Ref(struct Cache *pcache, struct Cache_Block_Header *pbh)
 void *Strategy_Create(struct Cache *pcache) 
 {
     count_nderef = 0;
+    deuxR = 2 * R;
     return NULL;
 }
 
 /*!
  * NRU : Rien à faire ici.
  */
-void Strategy_Close(struct Cache *pcache){}
+void Strategy_Close(struct Cache *pcache){
+    #ifdef DEBUG
+    printf("%d, %d, %d, %d.\n", c1, c2, c3, c4);
+    #endif
+}
 
 /*!
  * NRU : on reinitialise le compteur de nderef.
@@ -65,6 +73,9 @@ void Strategy_Close(struct Cache *pcache){}
 void Strategy_Invalidate(struct Cache *pcache)
 {
     initNUR(pcache);
+    #ifdef DEBUG
+    printf("%d, %d, %d, %d.\n", c1, c2, c3, c4);
+    #endif
 }
 
 /*! 
@@ -79,20 +90,31 @@ struct Cache_Block_Header *Strategy_Replace_Block(struct Cache *pcache)
         return pbh;
 
     for (int i = 0; i < pcache->nblocks; ++i)
-        if ((pcache->headers)[i].flags % 0x8 == VALID){
+        if ((pcache->headers)[i].flags % deuxR == VALID){
+            #ifdef DEBUG
+            c1++;
+            #endif
             return &pcache->headers[i];
         }
 
     for (int i = 0; i < pcache->nblocks; ++i)
-        if ((pcache->headers)[i].flags % 0x8 == (VALID + MODIF)){
+        if ((pcache->headers)[i].flags % deuxR == (VALID + MODIF)){
+            #ifdef DEBUG
+            c2++;
+            #endif
             return &pcache->headers[i];
         }
 
     for (int i = 0; i < pcache->nblocks; ++i)
-        if ((pcache->headers)[i].flags % 0x8 == (VALID + R)){
+        if ((pcache->headers)[i].flags % deuxR == (VALID + R)){
+            #ifdef DEBUG
+            c3++;
+            #endif
             return &pcache->headers[i];
         }
-
+    #ifdef DEBUG
+    c4++;
+    #endif
     // si on ne trouve rien, on tire un bloc aleatoire.
     return &pcache->headers[RANDOM(0, pcache->nblocks)];
 }

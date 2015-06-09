@@ -28,7 +28,8 @@ USRFILES =
 
 # Compilateur et options
 CC = gcc
-CFLAGS = -std=c99 -Wall -g -D_POSIX_C_SOURCE=200809L
+CFLAGS = -std=c99 -Wall -g -D_POSIX_C_SOURCE=200809L  
+#on peut rajouter -DDEBUG pour un mode debug.
 MKDEPEND = $(CC) $(CFLAGS) -MM
 
 # Documentation
@@ -53,7 +54,7 @@ tst_Cache_% : tst_Cache.o %_strategy.o $(USRFILES)
 # Exécutables : décommentés les exécutables des stratégies que vous avez implémentées
 # N'enlevez pas depend !
 
-all : depend tst_Cache_RAND tst_Cache_LRU # tst_Cache_FIFO tst_Cache_NUR
+all : depend $(PROGS)
 
 # Nettoyage 
 clean : all
