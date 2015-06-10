@@ -105,6 +105,9 @@ void Cache_List_Move_To_End(struct Cache_List *list,
 	if(blocToDeplace!=NULL){
 		Cache_List_Append(list,blocToDeplace); 
 	}
+	else{
+		Cache_List_Append(list,pbh); 
+	}
 }
 /*! Transférer un élément  au début */
 void Cache_List_Move_To_Begin(struct Cache_List *list,
@@ -113,6 +116,10 @@ void Cache_List_Move_To_Begin(struct Cache_List *list,
 	struct Cache_Block_Header *blocToDeplace = Cache_List_Remove(list,pbh);
 	if(blocToDeplace!=NULL){
 		Cache_List_Prepend(list,blocToDeplace); 
+	}
+	else
+	{
+		Cache_List_Prepend(list,pbh); 
 	}
 }
 

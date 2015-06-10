@@ -216,6 +216,9 @@ void printTestCache_List(){
     printf("===> Déplacement du bloc3 en debut de liste <===\n"); 
     Cache_List_Move_To_Begin(list, bloc3); 
     Cache_List_Print(list);
+    printf("===> Déplacement du bloc2 en debut de liste <===\n"); 
+    Cache_List_Move_To_Begin(list, bloc2); 
+    Cache_List_Print(list);
     printf("===> Destruction de la liste de blocs <===\n"); 
     Cache_List_Delete(list); 
     Cache_List_Print(list);
