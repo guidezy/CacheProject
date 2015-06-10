@@ -32,8 +32,7 @@ Cache_Error fetchDataFromFile(struct Cache* pcache, struct Cache_Block_Header* b
 		return CACHE_KO;
 
 	//Copy BLOCKSZ bytes to block
-	if( fread(block->data, pcache->recordsz, pcache->nrecords, file) != pcache->nrecords )
-		return CACHE_KO;
+	fread(block->data, pcache->recordsz, pcache->nrecords, file);
 
 	//Set flags
 	block->flags |= VALID;
