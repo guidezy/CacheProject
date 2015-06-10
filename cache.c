@@ -144,32 +144,8 @@ Cache_Error CacheManager(struct Cache *pcache, int irfile, const void *precord,
 		return CACHE_OK;
 	}
 
-	//BLOCK IS NOT IN CACHE
-	//Try to fetch block in some free position
-	struct Cache_Block_Header* block = Get_Free_Block(pcache);
-
-	if(block != NULL)
-	{
-		//We found some free space to put our data!
-		//Fetch data from file
-		if( fetchDataFromFile(pcache, block, pcache->fp, ibfile) == CACHE_KO )
-			return CACHE_KO;
-
-		//Copy record to block
-		memTransfCallback(block, precord, pcache->recordsz, irblock);
-
-		//REFLEX CALL
-		reflexCallback(pcache, block);
-
-		//Update statistics
-		(*statistic)++;
-
-		//Return
-		return CACHE_OK;
-	}
-
 	//NO FREE POSITION
-	block = Strategy_Replace_Block(pcache);
+	struct Cache_Block_Header* block = Strategy_Replace_Block(pcache);
 
 	if(!block) printf("---------- NULL BLOCK --------- \n");
 
