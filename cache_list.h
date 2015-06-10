@@ -50,4 +50,9 @@ void Cache_List_Move_To_End(struct Cache_List *list,
 void Cache_List_Move_To_Begin(struct Cache_List *list,
                               struct Cache_Block_Header *pbh);
 
+/*!Affiche une la liste par index du block dans le fichier.*/                              
+void Cache_List_Print(struct Cache_List * list);
+                              
+                              
+
 #endif /* CACHE_LIST_ */
