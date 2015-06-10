@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include "cache_list.h"
 
+struct Cache_List;
 
 /*! Création d'une liste de blocs */
 struct Cache_List *Cache_List_Create(){
@@ -21,8 +22,6 @@ void Cache_List_Delete(struct Cache_List *list){
 		iterater->next->prev = iterater->prev; 
 		free(iterater); 
 	} 
-
-
 }
 
 /*! Insertion d'un élément à la fin */
@@ -101,7 +100,7 @@ void Cache_List_Move_To_End(struct Cache_List *list,
                             struct Cache_Block_Header *pbh)
 {
 	if(list->prev->pheader == pbh) return;
-	struct Cache_List iterater;
+	struct Cache_List *iterater;
 	for(iterater = list->next; iterater != list;iterater = iterater->next){
 		if(pbh == iterater->pheader){
 			Cache_List_Remove(list,pbh);
@@ -117,7 +116,7 @@ void Cache_List_Move_To_Begin(struct Cache_List *list,
                               struct Cache_Block_Header *pbh)
 {
 	if(list->pheader == pbh) return;
-	struct Cache_List iterater;
+	struct Cache_List *iterater;
 	for(iterater = list->next; iterater != list;iterater = iterater->next){
 		if(pbh == iterater->pheader){
 			Cache_List_Remove(list,pbh);
