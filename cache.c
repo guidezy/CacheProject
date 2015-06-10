@@ -63,9 +63,6 @@ Cache_Error fetchDataFromFile(struct Cache* pcache, struct Cache_Block_Header* b
 
 	//Copy BLOCKSZ bytes to block
 	fread(block->data, pcache->recordsz, pcache->nrecords, file);
-
-	if( recordAgainstFile(file, DADDR(pcache, ibfile), block->data, pcache->recordsz * pcache->nrecords) )
-		printf("Problem in file fetchDataFromFile!\n");
 	
 	//Set flags
 	block->flags |= VALID;
