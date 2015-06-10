@@ -13,6 +13,8 @@
 #include "strategy.h"
 #include "random.h"
 #include "stdbool.h"
+#include "low_cache.h"
+#include "cache_list.h"
 
 /* ------------------------------------------------------------------------------------
  * Valeurs par défaut des variables globales qui suivent 
@@ -91,6 +93,9 @@ int N_Deref = N_DEREF;
 /* Format de sortie court */
 int Short_Output = 0;
 
+/*boolean pour l'affichage des tests sur cache_list.c*/
+bool printTestCacheList = false; 
+
 /* Une structure quelconque pour les enregistrements du cache
  * ----------------------------------------------------------
  */
@@ -143,6 +148,89 @@ static void (*Tests[])() = {
 /* Tests sélectionnés */
 static int Do_Test[NTESTS] = {false, false, false, false, false};
 
+//Affiche les différents tests de cach_list.c
+void printTestCache_List(){
+    printf("=====================Test de cache_list.c========================\n"); 
+    struct Cache_List * list = Cache_List_Create(); 
+    struct Cache_Block_Header * bloc1 =malloc(sizeof(struct Cache_Block_Header));
+    bloc1->ibfile =1; 
+    struct Cache_Block_Header * bloc2 =malloc(sizeof(struct Cache_Block_Header));
+    bloc2->ibfile =2; 
+    struct Cache_Block_Header * bloc3 =malloc(sizeof(struct Cache_Block_Header));
+    bloc3->ibfile =3; 
+    struct Cache_Block_Header * bloc4 =malloc(sizeof(struct Cache_Block_Header));
+    bloc4->ibfile =4; 
+    printf("===> Ajout du bloc1 en debut de liste <===\n");
+    Cache_List_Prepend(list, bloc1); 
+    Cache_List_Print(list);
+    printf("===> Ajout du bloc2 en debut de liste <===\n");
+    Cache_List_Prepend(list, bloc2);
+    Cache_List_Print(list);
+    printf("===> Ajout du bloc3 en fin de liste <===\n");
+    Cache_List_Append(list, bloc3);
+    Cache_List_Print(list);
+    printf("===> Ajout du bloc4 en fin de liste <===\n");
+    Cache_List_Append(list, bloc4);
+    Cache_List_Print(list);
+    printf("===> Suppression du première élément <===\n");
+    struct Cache_Block_Header * new1 = Cache_List_Remove_First(list); 
+    Cache_List_Print(list);
+    printf("\t Nous avons supprimé le bloc : %d\n",new1->ibfile); 
+    printf("===> Ajout du bloc2 en debut de liste <===\n");
+    Cache_List_Prepend(list, bloc2);
+    Cache_List_Print(list);
+    printf("===> Suppression du dernière élément <===\n");
+    struct Cache_Block_Header * new2 = Cache_List_Remove_Last(list); 
+    Cache_List_Print(list);
+    printf("\t Nous avons supprimé le bloc : %d\n",new2->ibfile); 
+    printf("===> Suppression du bloc 1 <===\n");
+    struct Cache_Block_Header * new3 = Cache_List_Remove(list,bloc1); 
+    Cache_List_Print(list);
+    printf("\t Nous avons supprimé le bloc : %d\n",new3->ibfile); 
+    printf("===> Suppression du bloc 1 <===\n");
+    struct Cache_Block_Header * new4 = Cache_List_Remove(list,bloc1); 
+    Cache_List_Print(list);
+    if(new4!=NULL)
+    	printf("\t Nous avons supprimé le bloc : %d\n",new4->ibfile); 
+    printf("===> On clear le liste <===\n"); 
+    Cache_List_Clear(list); 
+    Cache_List_Print(list);
+    bool listVide = Cache_List_Is_Empty(list); 
+    if(listVide){
+    	printf("\t La liste est bien vide\n");
+    }else{
+    	printf("\t La liste n'est pas vide\n"); 
+    }
+    printf("===> Ajout du bloc1 en debut de liste <===\n");
+    Cache_List_Prepend(list, bloc1); 
+    Cache_List_Print(list);
+    printf("===> Ajout du bloc4 en debut de liste <===\n");
+    Cache_List_Prepend(list, bloc4);
+    Cache_List_Print(list);
+    printf("===> Ajout du bloc3 en fin de liste <===\n");
+    Cache_List_Append(list, bloc3);
+    Cache_List_Print(list);
+    printf("===> Déplacement du bloc4 en fin de liste <===\n"); 
+    Cache_List_Move_To_End(list, bloc4); 
+    Cache_List_Print(list);
+    printf("===> Déplacement du bloc3 en debut de liste <===\n"); 
+    Cache_List_Move_To_Begin(list, bloc3); 
+    Cache_List_Print(list);
+    printf("===> Déplacement du bloc2 en debut de liste <===\n"); 
+    Cache_List_Move_To_Begin(list, bloc2); 
+    Cache_List_Print(list);
+    printf("===> Destruction de la liste de blocs <===\n"); 
+    Cache_List_Delete(list); 
+    Cache_List_Print(list);
+    listVide = Cache_List_Is_Empty(list); 
+    if(listVide){
+    	printf("\t La liste est bien vide\n");
+    }else{
+    	printf("\t La liste n'est pas vide\n"); 
+    }
+    printf("=================================================================\n");
+}
+
 /* ------------------------------------------------------------------------------------
  * Programme principal
  * -------------------
@@ -159,7 +247,7 @@ int main(int argc, char *argv[])
     /* Décodage des arguments de la ligne de commande */
     Scan_Args(argc, argv);
 
-    /* Initialisation du cache */
+    /* Initialisation du cache*/
     if ((The_Cache = Cache_Create(File, N_Blocks_in_Cache, N_Records_per_Block,
                                   Record_Size, N_Deref)) == NULL)
 	Error("Cache_Init");
@@ -173,7 +261,10 @@ int main(int argc, char *argv[])
 
     /* Fermeture du cache */
     if (!Cache_Close(The_Cache)) Error("Cache_Close");
-
+    
+    if(printTestCacheList){
+    	printTestCache_List(); 
+    }
     return 0;
 }
 
@@ -600,6 +691,9 @@ static void Scan_Args(int argc, char *argv[])
             case 'd':
                 N_Deref = atoi(argv[++i]);
                 break;
+            case 'T': 
+            	printTestCacheList=true; 
+            	break;
 	    default:
 		fprintf(stderr, "Option inconnue : %s\n", argv[i]);
 		exit(1);
