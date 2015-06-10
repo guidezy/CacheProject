@@ -32,8 +32,7 @@ Cache_Error fetchDataFromFile(struct Cache* pcache, struct Cache_Block_Header* b
 		return CACHE_KO;
 
 	//Copy BLOCKSZ bytes to block
-	if( fread(block->data, pcache->recordsz, pcache->nrecords, file) != pcache->nrecords)
-		return CACHE_KO;
+	fread(block->data, pcache->recordsz, pcache->nrecords, file);
 
 	//Set flags
 	block->flags |= VALID;
@@ -136,6 +135,9 @@ Cache_Error CacheManager(struct Cache *pcache, int irfile, const void *precord,
 		struct Cache_Block_Header block = pcache->headers[blockIndex];
 		memTransfCallback(&block, precord, pcache->recordsz, irblock);
 		
+		//REFLEX CALL
+		reflexCallback(pcache, &block);
+
 		//Update statistics
 		(*statistic)++;
 
@@ -156,6 +158,9 @@ Cache_Error CacheManager(struct Cache *pcache, int irfile, const void *precord,
 		//Copy record to block
 		memTransfCallback(block, precord, pcache->recordsz, irblock);
 
+		//REFLEX CALL
+		reflexCallback(pcache, block);
+
 		//Update statistics
 		(*statistic)++;
 
@@ -165,6 +170,8 @@ Cache_Error CacheManager(struct Cache *pcache, int irfile, const void *precord,
 
 	//NO FREE POSITION
 	block = Strategy_Replace_Block(pcache);
+
+	if(!block) printf("---------- NULL BLOCK --------- \n");
 
 	//Synchronize with file before substitution
 	if(block->flags & MODIF)
@@ -231,7 +238,9 @@ struct Cache* Cache_Create(const char *fic, unsigned nblocks, unsigned nrecords,
 	if(!cache->headers) return NULL;
 
 	cache->pfree = &cache->headers[0];
+
 	cache->pstrategy = Strategy_Create(cache);
+	printf("Cache.c is storing: %lu\n", cache->pstrategy);
 	
 	return cache;
 }
