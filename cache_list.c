@@ -3,6 +3,7 @@
 #include "cache_list.h"
 #include "low_cache.h"
 
+struct Cache_List;
 
 /*! Création d'une liste de blocs */
 struct Cache_List *Cache_List_Create(){
@@ -22,8 +23,6 @@ void Cache_List_Delete(struct Cache_List *list){
 		iterater->next->prev = iterater->prev; 
 		free(iterater); 
 	} 
-
-
 }
 
 /*! Insertion d'un élément à la fin */
@@ -101,6 +100,7 @@ bool Cache_List_Is_Empty(struct Cache_List *list){
 void Cache_List_Move_To_End(struct Cache_List *list,
                             struct Cache_Block_Header *pbh)
 {
+
 	struct Cache_Block_Header *blocToDeplace = Cache_List_Remove(list,pbh);
 	if(blocToDeplace!=NULL){
 		Cache_List_Append(list,blocToDeplace); 
