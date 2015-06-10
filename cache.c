@@ -32,7 +32,8 @@ Cache_Error fetchDataFromFile(struct Cache* pcache, struct Cache_Block_Header* b
 		return CACHE_KO;
 
 	//Copy BLOCKSZ bytes to block
-	fread(block->data, pcache->recordsz, pcache->nrecords, file);
+	if( fread(block->data, pcache->recordsz, pcache->nrecords, file) != pcache->nrecords )
+		return CACHE_KO;
 
 	//Set flags
 	block->flags |= VALID;
@@ -74,11 +75,9 @@ void dereferenceBlocks(struct Cache* pcache)
 	pcache->instrument.n_deref++;
 }
 
+static int N_ACCESS_CACHE_SYNC = 0;
 void syncTimer(struct Cache* pcache)
 {
-	static int N_ACCESS_CACHE_SYNC = 0;
-	static int N_ACCESS_CACHE_DEREF = 0;
-
 	//Timer for synchronisation
 	if(N_ACCESS_CACHE_SYNC > NSYNC)
 	{
@@ -87,15 +86,6 @@ void syncTimer(struct Cache* pcache)
 	}
 	else
 		N_ACCESS_CACHE_SYNC++;
-
-	//Timer for dereferencing
-	if(pcache->nderef > 0 && N_ACCESS_CACHE_DEREF > pcache->nderef)
-	{
-		N_ACCESS_CACHE_DEREF = 0;
-		//dereferenceBlocks(pcache);
-	}
-	else
-		N_ACCESS_CACHE_DEREF++;
 }
 
 void record2Block(struct Cache_Block_Header* block, void* record, int recordsz, int irblock)
@@ -146,8 +136,6 @@ Cache_Error CacheManager(struct Cache *pcache, int irfile, const void *precord,
 
 	//NO FREE POSITION
 	struct Cache_Block_Header* block = Strategy_Replace_Block(pcache);
-
-	if(!block) printf("---------- NULL BLOCK --------- \n");
 
 	//Synchronize with file before substitution
 	if(block->flags & MODIF)
@@ -246,6 +234,8 @@ Cache_Error Cache_Invalidate(struct Cache *pcache)
 	for(int i = 0; i < pcache->nblocks; i++)
 		pcache->headers[i].flags &= ~VALID;
 
+	pcache->pfree = &pcache->headers[0];
+
 	Strategy_Invalidate(pcache);
 
 	return CACHE_OK;
@@ -275,6 +265,7 @@ Cache_Error Cache_Sync(struct Cache *pcache)
 		pcache->headers[i].flags &= ~MODIF;
 	}
 
+	N_ACCESS_CACHE_SYNC = 0;
 	pcache->instrument.n_syncs++;
 
 	return CACHE_OK;
