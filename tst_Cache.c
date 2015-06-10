@@ -14,6 +14,7 @@
 #include "random.h"
 #include "stdbool.h"
 #include "low_cache.h"
+#include "cache_list.h"
 
 /* ------------------------------------------------------------------------------------
  * Valeurs par défaut des variables globales qui suivent 
@@ -147,43 +148,6 @@ static void (*Tests[])() = {
 /* Tests sélectionnés */
 static int Do_Test[NTESTS] = {false, false, false, false, false};
 
-/* ------------------------------------------------------------------------------------
- * Programme principal
- * -------------------
- * Décodage des arguments,
- * Création et initialisation le cache, 
- * Exécution des tests
- * Fermeture (et destruction) du cache.
- * ------------------------------------------------------------------------------------
- */
-int main(int argc, char *argv[])
-{
-    int i;
-
-    /* Décodage des arguments de la ligne de commande */
-    Scan_Args(argc, argv);
-
-    /* Initialisation du cache*/
-    if ((The_Cache = Cache_Create(File, N_Blocks_in_Cache, N_Records_per_Block,
-                                  Record_Size, N_Deref)) == NULL)
-	Error("Cache_Init");
-    Print_Parameters();
-
-    /* Exécution des tests */
-    for (i = 0; i < NTESTS; ++i)
-    {
-        if (Do_Test[i]) Tests[i]();
-    }
-
-    /* Fermeture du cache */
-    if (!Cache_Close(The_Cache)) Error("Cache_Close");
-    
-    if(printTestCacheList){
-    	printTestCache_List(); 
-    }
-    return 0;
-}
-
 //Affiche les différents tests de cach_list.c
 void printTestCache_List(){
     printf("=====================Test de cache_list.c========================\n"); 
@@ -252,6 +216,9 @@ void printTestCache_List(){
     printf("===> Déplacement du bloc3 en debut de liste <===\n"); 
     Cache_List_Move_To_Begin(list, bloc3); 
     Cache_List_Print(list);
+    printf("===> Déplacement du bloc2 en debut de liste <===\n"); 
+    Cache_List_Move_To_Begin(list, bloc2); 
+    Cache_List_Print(list);
     printf("===> Destruction de la liste de blocs <===\n"); 
     Cache_List_Delete(list); 
     Cache_List_Print(list);
@@ -262,6 +229,43 @@ void printTestCache_List(){
     	printf("\t La liste n'est pas vide\n"); 
     }
     printf("=================================================================\n");
+}
+
+/* ------------------------------------------------------------------------------------
+ * Programme principal
+ * -------------------
+ * Décodage des arguments,
+ * Création et initialisation le cache, 
+ * Exécution des tests
+ * Fermeture (et destruction) du cache.
+ * ------------------------------------------------------------------------------------
+ */
+int main(int argc, char *argv[])
+{
+    int i;
+
+    /* Décodage des arguments de la ligne de commande */
+    Scan_Args(argc, argv);
+
+    /* Initialisation du cache*/
+    if ((The_Cache = Cache_Create(File, N_Blocks_in_Cache, N_Records_per_Block,
+                                  Record_Size, N_Deref)) == NULL)
+	Error("Cache_Init");
+    Print_Parameters();
+
+    /* Exécution des tests */
+    for (i = 0; i < NTESTS; ++i)
+    {
+        if (Do_Test[i]) Tests[i]();
+    }
+
+    /* Fermeture du cache */
+    if (!Cache_Close(The_Cache)) Error("Cache_Close");
+    
+    if(printTestCacheList){
+    	printTestCache_List(); 
+    }
+    return 0;
 }
 
 /* ------------------------------------------------------------------------------------ 
