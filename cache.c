@@ -242,6 +242,14 @@ Cache_Error Cache_Close(struct Cache *pcache)
 	Strategy_Close(pcache->pstrategy);
 
 	//Free everything
+	free( pcache->file );
+	pcache->file = NULL;
+
+	for(int i = 0; i < pcache->nblocks; i++) {
+		free( pcache->headers[i].data );
+		pcache->headers[i].data = NULL;
+	}
+
 	free( pcache->headers );
 	pcache->headers = NULL;
 
