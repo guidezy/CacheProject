@@ -32,7 +32,11 @@ int recordAgainstFile(FILE *fp, int indexInFile, const void* buffer, unsigned in
 	void* file = malloc(nBytes);
 	fread(file, 1, nBytes, fp);
 
-	return memcmp(file, buffer, nBytes);
+	int out = memcmp(file, buffer, nBytes);
+
+	free(file);
+
+	return out;
 }
 
 //------------------------------
@@ -112,7 +116,7 @@ void syncTimer(struct Cache* pcache)
 		N_ACCESS_CACHE_SYNC++;
 }
 
-void record2Block(struct Cache_Block_Header* block, void* record, int recordsz, int irblock)
+void record2Block(struct Cache_Block_Header* block, const void* record, int recordsz, int irblock)
 {
 	//Copy PRECORD
 	unsigned long addressInBytes = recordsz * irblock;
@@ -121,7 +125,7 @@ void record2Block(struct Cache_Block_Header* block, void* record, int recordsz, 
 	block->flags |= MODIF;
 }
 
-void block2Record(struct Cache_Block_Header* block, void* record, int recordsz, int irblock)
+void block2Record(struct Cache_Block_Header* block, const void* record, int recordsz, int irblock)
 {
 	unsigned long addressInBytes = recordsz * irblock;
 	memcpy(record, &block->data[addressInBytes], recordsz);
@@ -129,9 +133,9 @@ void block2Record(struct Cache_Block_Header* block, void* record, int recordsz, 
 
 
 typedef void (*ReflexCallback)(struct Cache *,struct Cache_Block_Header*);
-typedef void (*MemTransfCallback)(struct Cache_Block_Header*,void*,int,int);
+typedef void (*MemTransfCallback)(struct Cache_Block_Header*,const void*,int,int);
 Cache_Error CacheManager(struct Cache *pcache, int irfile, const void *precord, 
-	ReflexCallback reflexCallback, MemTransfCallback memTransfCallback, int* statistic)
+	ReflexCallback reflexCallback, MemTransfCallback memTransfCallback, unsigned * statistic)
 {
 	syncTimer(pcache);
 
@@ -213,7 +217,7 @@ struct Cache* Cache_Create(const char *fic, unsigned nblocks, unsigned nrecords,
 	//Alloue un nouveau struct Cache*
 	struct Cache* cache = malloc( sizeof(struct Cache) );
 	
-	cache->file = fic;
+	cache->file = strdup(fic);
 	cache->fp = file;
 	cache->nderef = nderef;
 	cache->nblocks = nblocks;
@@ -241,11 +245,20 @@ Cache_Error Cache_Close(struct Cache *pcache)
 	fclose(pcache->fp);
 	Strategy_Close(pcache->pstrategy);
 
-	//Free tous les structs
-	free( pcache->headers );
-	free( pcache );
+	//Free everything
+	free( pcache->file );
+	pcache->file = NULL;
 
-	pcache = pcache->headers = NULL;
+	for(int i = 0; i < pcache->nblocks; i++) {
+		free( pcache->headers[i].data );
+		pcache->headers[i].data = NULL;
+	}
+
+	free( pcache->headers );
+	pcache->headers = NULL;
+
+	free( pcache );
+	pcache = NULL;
 
 	return CACHE_OK;
 }
