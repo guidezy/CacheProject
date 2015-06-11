@@ -23,6 +23,7 @@ void Cache_List_Delete(struct Cache_List *list){
 		iterater->next->prev = iterater->prev; 
 		free(iterater); 
 	} 
+	free(list);
 }
 
 /*! Insertion d'un élément à la fin */
