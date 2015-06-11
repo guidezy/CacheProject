@@ -27,7 +27,7 @@ void Cache_List_Delete(struct Cache_List *list){
 
 /*! Insertion d'un élément à la fin */
 void Cache_List_Append(struct Cache_List *list, struct Cache_Block_Header *pbh){
-	struct Cache_List * new = malloc(sizeof(struct Cache_List)); 
+	struct Cache_List * new = Cache_List_Create(); 
 	new->pheader=pbh; 
 	struct Cache_List * debut = list->next; 
 	for(; debut!=list; debut=debut->next)
@@ -36,7 +36,7 @@ void Cache_List_Append(struct Cache_List *list, struct Cache_Block_Header *pbh){
 	new->prev = debut->prev; 
 	debut->prev->next = new; 
 	debut->prev = new; 
-	new->next = debut; 
+	new->next = debut;
 }
 
 /*! Insertion d'un élément au début*/
