@@ -5,6 +5,36 @@
 #include <stdio.h>
 #include <string.h>
 
+//-------------------------------------
+//--------- DEBUGGING TOOLS -----------
+//-------------------------------------
+void dump(char* tag, const void* startingAddress, unsigned int nBytes)
+{
+	printf("--- %s ---\n", tag);
+	int* mem = (int*)startingAddress;
+
+	for(int j = 0; j < nBytes; j++)
+	{
+		for(int i = 0; i < 8; i++)
+			printf("0x%08x ", *mem++);
+		printf("\n");
+	}
+
+	fflush(stdout);
+}
+
+//Compares whether the content of a buffer is the same of a file segment
+int recordAgainstFile(FILE *fp, int indexInFile, const void* buffer, unsigned int nBytes)
+{
+	//Go to position
+	fseek(fp, indexInFile, SEEK_SET);
+
+	void* file = malloc(nBytes);
+	fread(file, 1, nBytes, fp);
+
+	return memcmp(file, buffer, nBytes);
+}
+
 //------------------------------
 //--------- INTERNAL -----------
 //------------------------------
@@ -32,8 +62,7 @@ Cache_Error fetchDataFromFile(struct Cache* pcache, struct Cache_Block_Header* b
 		return CACHE_KO;
 
 	//Copy BLOCKSZ bytes to block
-	if( fread(block->data, pcache->recordsz, pcache->nrecords, file) != pcache->nrecords )
-		return CACHE_KO;
+	fread(block->data, pcache->recordsz, pcache->nrecords, file);
 
 	//Set flags
 	block->flags |= VALID;
@@ -58,6 +87,9 @@ Cache_Error sendDataToFile(struct Cache* pcache, struct Cache_Block_Header* bloc
 	if( fwrite(block->data, pcache->recordsz, pcache->nrecords, file) != pcache->nrecords)
 		return CACHE_KO;
 
+	if( recordAgainstFile(file, DADDR(pcache, block->ibfile), block->data, pcache->recordsz * pcache->nrecords) )
+		printf("Problem in file sendDataToFile!\n");
+
 	//Set flags
 	block->flags &= ~MODIF;
 
@@ -65,14 +97,6 @@ Cache_Error sendDataToFile(struct Cache* pcache, struct Cache_Block_Header* bloc
 	rewind(file);
 
 	return CACHE_OK;
-}
-
-void dereferenceBlocks(struct Cache* pcache)
-{
-	for(int i = 0; i < pcache->nblocks; i++)
-		pcache->headers[i].flags &= ~R;
-
-	pcache->instrument.n_deref++;
 }
 
 static int N_ACCESS_CACHE_SYNC = 0;
@@ -121,7 +145,7 @@ Cache_Error CacheManager(struct Cache *pcache, int irfile, const void *precord,
 		//Cache hit!
 		pcache->instrument.n_hits++;
 
-		//The block is inside the cache! Copy the entry to precord		
+		//The block is inside the cache!	
 		struct Cache_Block_Header block = pcache->headers[blockIndex];
 		memTransfCallback(&block, precord, pcache->recordsz, irblock);
 		
@@ -145,7 +169,7 @@ Cache_Error CacheManager(struct Cache *pcache, int irfile, const void *precord,
 	if( fetchDataFromFile(pcache, block, pcache->fp, ibfile) == CACHE_KO)
 		return CACHE_KO;
 
-	//Copy block entry to buffer
+	//Copy precord to block OR block to precord
 	memTransfCallback(block, precord, pcache->recordsz, irblock);
 
 	//REFLEX CALL
@@ -204,7 +228,6 @@ struct Cache* Cache_Create(const char *fic, unsigned nblocks, unsigned nrecords,
 	cache->pfree = &cache->headers[0];
 
 	cache->pstrategy = Strategy_Create(cache);
-	printf("Cache.c is storing: %lu\n", cache->pstrategy);
 	
 	return cache;
 }
