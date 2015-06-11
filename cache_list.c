@@ -87,7 +87,10 @@ void Cache_List_Clear(struct Cache_List *list){
 	struct Cache_List * iterater; 
 	for(iterater=list->next; iterater!=list; iterater = iterater->next)
 	{	
-		 Cache_List_Remove(list, iterater->pheader);
+		Cache_List_Remove(list, iterater->pheader);
+		iterater->prev->next = iterater ->next; 
+		iterater->next->prev = iterater->prev; 
+		free(iterater); 
 	} 
 }
 
