@@ -32,7 +32,11 @@ int recordAgainstFile(FILE *fp, int indexInFile, const void* buffer, unsigned in
 	void* file = malloc(nBytes);
 	fread(file, 1, nBytes, fp);
 
-	return memcmp(file, buffer, nBytes);
+	int out = memcmp(file, buffer, nBytes);
+
+	free(file);
+
+	return out;
 }
 
 //------------------------------
