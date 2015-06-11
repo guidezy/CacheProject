@@ -56,16 +56,24 @@ void Cache_List_Prepend(struct Cache_List *list, struct Cache_Block_Header *pbh)
 struct Cache_Block_Header *Cache_List_Remove_First(struct Cache_List *list){
 	struct Cache_List * first = list->next; 
 	first->prev->next = first->next; 
-	first->next->prev = first->prev; 
-	return first->pheader; 
+	first->next->prev = first->prev;
+
+	struct Cache_Block_Header* aux = first->pheader;
+	free(first);
+
+	return aux; 
 }
 
 /*! Retrait du dernier élément */
 struct Cache_Block_Header *Cache_List_Remove_Last(struct Cache_List *list){
 	struct Cache_List * last = list->prev;  
 	last->next->prev = last->prev; 
-	last->prev->next = last->next; 
-	return last->pheader; 
+	last->prev->next = last->next;
+
+	struct Cache_Block_Header* aux = last->pheader;
+	free(last);
+
+	return aux; 
 }
 
 /*! Retrait d'un élément quelconque */
@@ -80,7 +88,10 @@ struct Cache_Block_Header *Cache_List_Remove(struct Cache_List *list,
 		iterater->prev->next = iterater->next; 
 		iterater->next->prev = iterater->prev; 
 	}
-	return iterater->pheader; 
+
+	struct Cache_Block_Header* aux = iterater->pheader;
+	free(iterater);
+	return aux; 
 
 }
 /*! Remise en l'état de liste vide */
@@ -88,11 +99,12 @@ void Cache_List_Clear(struct Cache_List *list){
 	struct Cache_List * iterater; 
 	for(iterater=list->next; iterater!=list; iterater = iterater->next)
 	{	
-		Cache_List_Remove(list, iterater->pheader);
 		iterater->prev->next = iterater ->next; 
 		iterater->next->prev = iterater->prev; 
 		free(iterater); 
-	} 
+	}
+	list->prev = list;
+	list->next = list;
 }
 
 /*! Test de liste vide */

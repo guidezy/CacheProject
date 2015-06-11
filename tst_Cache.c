@@ -193,7 +193,7 @@ void printTestCache_List(){
     if(new4!=NULL)
     	printf("\t Nous avons supprimé le bloc : %d\n",new4->ibfile); 
     printf("===> On clear le liste <===\n"); 
-    Cache_List_Clear(list); 
+    //Cache_List_Clear(list); 
     Cache_List_Print(list);
     bool listVide = Cache_List_Is_Empty(list); 
     if(listVide){
