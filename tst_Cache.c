@@ -613,6 +613,9 @@ static void Usage(const char *execname)
            "-W nws\tnombre de working sets (tests 4 et 5)\n"
            "-L nl\tlongueur de la fenêtre de localité (test 4 et 5)\n"
            "-d dr\tpériode de déréférençage pour NUR\n");
+    printf("\nTests de cache_list.c\n"
+    "---------------------------------\n"
+    		"-T \taffiche les differents tests de cache_list\n"); 
 }
     
 /* Analyse des arguments 
