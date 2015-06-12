@@ -144,37 +144,31 @@ Cache_Error CacheManager(struct Cache *pcache, int irfile, const void *precord,
 	int irblock = irfile % pcache->nrecords; //Index inside a block
 	int blockIndex = searchIndexInCache(ibfile, pcache);
 
+	struct Cache_Block_Header* block;
 	if(blockIndex >= 0)
 	{
 		//Cache hit!
 		pcache->instrument.n_hits++;
 
 		//The block is inside the cache!	
-		struct Cache_Block_Header block = pcache->headers[blockIndex];
-		memTransfCallback(&block, precord, pcache->recordsz, irblock);
+		block = &pcache->headers[blockIndex];
+		memTransfCallback(block, precord, pcache->recordsz, irblock);
 		
-		//REFLEX CALL
-		reflexCallback(pcache, &block);
+	} else {
+		//NO FREE POSITION
+		block = Strategy_Replace_Block(pcache);
 
-		//Update statistics
-		(*statistic)++;
+		//Synchronize with file before substitution
+		if(block->flags & MODIF)
+			if( sendDataToFile(pcache, block, pcache->fp) == CACHE_KO) return CACHE_KO;
 
-		return CACHE_OK;
+		//Fetch data from file
+		if( fetchDataFromFile(pcache, block, pcache->fp, ibfile) == CACHE_KO)
+			return CACHE_KO;
+
+		//Copy precord to block OR block to precord
+		memTransfCallback(block, precord, pcache->recordsz, irblock);
 	}
-
-	//NO FREE POSITION
-	struct Cache_Block_Header* block = Strategy_Replace_Block(pcache);
-
-	//Synchronize with file before substitution
-	if(block->flags & MODIF)
-		if( sendDataToFile(pcache, block, pcache->fp) == CACHE_KO) return CACHE_KO;
-
-	//Fetch data from file
-	if( fetchDataFromFile(pcache, block, pcache->fp, ibfile) == CACHE_KO)
-		return CACHE_KO;
-
-	//Copy precord to block OR block to precord
-	memTransfCallback(block, precord, pcache->recordsz, irblock);
 
 	//REFLEX CALL
 	reflexCallback(pcache, block);
