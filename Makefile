@@ -28,7 +28,7 @@ USRFILES = cache.o low_cache.o cache_list.o
 
 # Compilateur et options
 CC = gcc
-CFLAGS = -std=c99 -Wall -g -D_POSIX_C_SOURCE=200809L -DDEBUG 
+CFLAGS = -std=c99 -Wall -g -D_POSIX_C_SOURCE=200809L
 #on peut rajouter -DDEBUG pour un mode debug.
 MKDEPEND = $(CC) $(CFLAGS) -MM
 
