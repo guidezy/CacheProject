@@ -1,7 +1,7 @@
 /*!
  * \file LRU.c
  * Implementation de la strategie LRU 
-
+ *
  */
 
 #include <assert.h>

@@ -3,7 +3,6 @@
 #include "cache_list.h"
 #include "low_cache.h"
 
-struct Cache_List;
 
 /*! Création d'une liste de blocs */
 struct Cache_List *Cache_List_Create(){
@@ -141,6 +140,7 @@ void Cache_List_Move_To_Begin(struct Cache_List *list,
 	}
 }
 
+/* Affiche la liste de bloc par index de block*/
 void Cache_List_Print(struct Cache_List * list){
 	printf("( ");
 	for(struct Cache_List * iterater=list->next; iterater!=list;iterater = iterater->next)

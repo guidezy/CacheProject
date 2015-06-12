@@ -3,9 +3,6 @@
  *
  * \brief  Stratégie de remplacement fifo..
  * 
- * \author Jean-Paul Rigault 
- *
- * $Id: FIFO_strategy.c,v 1.3 2008/03/04 16:52:49 jpr Exp $
  */
 
 #include <assert.h>
