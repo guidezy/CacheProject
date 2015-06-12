@@ -11,7 +11,7 @@
 
 SCRIPTS = ..
 
-all plots : cache_size read_write_ratio seq_access working_sets locality
+all plots : cache_size read_write_ratio seq_access working_sets locality dereference
 	for eps in *.eps; do \
 		convert $$eps `basename $$eps .eps`.jpg; \
 	done
@@ -71,4 +71,13 @@ locality :
 			-t $$t -L "100,70" \
 			-- -L 5 10 20 50 100 150 200 250 300 350 400 500 600 ; \
 	done
+
+dereference : 
+	for t in 1 2 3 4 5; do \
+		$(SCRIPTS)/plot.sh -T "Effet du dereferencement" \
+			-o t$$t-dereference -x "Nombre de dereferencement" \
+			-t $$t -L "100,70" \
+			-- -d 5 10 20 30 40 50 60 70 80 90 100 110 120 130 140 150 160 170 180 190 200 225 250 275 300 325 350 400 450 500 600 1000; \
+	done
+
 
