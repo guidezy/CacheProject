@@ -63,7 +63,7 @@ do
     echo -n $n
     for strategy in NUR LRU FIFO RAND
     do 
-        ../tst_Cache_$strategy -t $TestNum $SimulOpt $n -S | \
+        ../tst_Cache_$strategy -d 150 -t $TestNum $SimulOpt $n -S | \
             awk '$1 ~ /hits/ {printf " %.2f ", $2}' 
     done
     echo
